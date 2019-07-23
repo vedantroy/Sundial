@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include "global.h"
 
@@ -13,7 +13,7 @@
 #define WTS_MASK ((1UL << WTS_LEN) - 1)
 #define RTS_MASK (((1UL << RTS_LEN) - 1) << WTS_LEN)
 
-#else 
+#else
 
 #define LOCK_BIT (1UL << 63)
 
@@ -30,8 +30,8 @@ public:
 	Row_maat(row_t * row) : Row_maat()
 	{ _row = row; }
 
-	RC 					read(TxnManager * txn, char * data, 
-							 uint64_t &wts, uint64_t &rts, bool latch = true); 
+	RC 					read(TxnManager * txn, char * data,
+							 uint64_t &wts, uint64_t &rts, bool latch = true);
 	RC					write(TxnManager * txn, char * data, uint64_t &wts, uint64_t &rts, bool latch = true);
 
 	void				latch() { pthread_mutex_lock(_latch); };
@@ -41,17 +41,17 @@ public:
 	void 				extend_rts(uint64_t rts);
 	void 				delete_row(uint64_t del_ts);
 	void				get_last_ts(ts_t & last_rts, ts_t & last_wts);
-	
+
 	ts_t 				get_wts();
 	ts_t 				get_rts();
 
 #if VALIDATION_LOCK == WAIT_DIE
-	
-  	TxnManager *		_lock_owner; 
+
+  	TxnManager *		_lock_owner;
 	struct CompareWait {
 		bool operator() (TxnManager * en1, TxnManager * en2) const;
 	};
-	std::set<TxnManager *, CompareWait> _waiting_set; 
+	std::set<TxnManager *, CompareWait> _waiting_set;
 	uint32_t _max_num_waits;
  #endif
 
@@ -64,7 +64,7 @@ public:
 
 	bool 				_deleted;
 	uint64_t 			_delete_timestamp;
-	
+
 	row_t * 			_row;
 	uint64_t			_wts; // last write timestamp
 	uint64_t			_rts; // end lease timestamp
@@ -72,7 +72,7 @@ public:
 	set<TxnManager *>		_uncommitted_reader;
 	uint64_t			_lastrts; // last rts
 	uint64_t			_lastwts;
-	// TODO _wr_latch can be removed using the atomic word trick. 
+	// TODO _wr_latch can be removed using the atomic word trick.
 	pthread_mutex_t * 	_latch;   	 // to guarantee read/write consistency
 	bool				_ts_lock;	 // wts/rts cannot be changed if _ts_lock is true.
 	// for locality predictor

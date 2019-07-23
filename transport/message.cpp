@@ -9,7 +9,7 @@ Message::Message(Type type, uint32_t dest, uint64_t txn_id, int size, char * dat
 	, _data(data)
 {
 	_dest_node_id = dest;
-	_src_node_id = g_node_id; 
+	_src_node_id = g_node_id;
 }
 
 Message::Message(Message * msg)
@@ -25,7 +25,7 @@ Message::Message(char * packet)
 	if (_data_size > 0) {
 		_data = (char *) MALLOC(_data_size);
 		memcpy(_data, packet + sizeof(Message), _data_size);
-	} else 
+	} else
 		_data = NULL;
 }
 
@@ -35,10 +35,10 @@ Message::~Message()
 		FREE(_data, _data_size);
 }
 
-uint32_t 
+uint32_t
 Message::get_packet_len()
-{ 
-	return sizeof(Message) + _data_size; 
+{
+	return sizeof(Message) + _data_size;
 }
 
 void
@@ -49,7 +49,7 @@ Message::to_packet(char * packet)
 		memcpy(packet + sizeof(Message), _data, _data_size);
 }
 
-string  
+string
 Message::get_name(Type type)
 {
 	switch(type) {
@@ -78,10 +78,10 @@ Message::get_name(Type type)
 	}
 }
 
-bool 
+bool
 Message::is_response(Type type)
 {
-	return (type == RESP_COMMIT) 
+	return (type == RESP_COMMIT)
 		|| (type == RESP_ABORT)
 		|| (type == PREPARED_COMMIT)
 		|| (type == PREPARED_ABORT)

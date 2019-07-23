@@ -13,7 +13,7 @@
 
 #if CC_ALG == F_ONE
 
-bool F1Manager::_pre_abort = PRE_ABORT; 
+bool F1Manager::_pre_abort = PRE_ABORT;
 
 F1Manager::F1Manager(TxnManager * txn)
 	: CCManager(txn)
@@ -22,15 +22,15 @@ F1Manager::F1Manager(TxnManager * txn)
 	_signal_abort = false;
 	_timestamp = glob_manager->get_ts(GET_THD_ID);
 }
-		
-bool 
+
+bool
 F1Manager::is_txn_ready()
 {
 	return _num_lock_waits == 0 || _signal_abort;
 }
-	
-void 
-F1Manager::set_txn_ready(RC rc) 
+
+void
+F1Manager::set_txn_ready(RC rc)
 {
 	if (rc == RCOK)
 		ATOM_SUB_FETCH(_num_lock_waits, 1);
@@ -39,7 +39,7 @@ F1Manager::set_txn_ready(RC rc)
 	}
 }
 
-void 
+void
 F1Manager::cleanup(RC rc)
 {
 	for (uint32_t i = 0; i < _index_access_set.size(); i++) {
@@ -50,10 +50,10 @@ F1Manager::cleanup(RC rc)
 		}
 		if (access->rows)
 			delete access->rows;
-	}	
+	}
 	for (uint32_t i = 0; i < _access_set.size(); i ++)
 	{
-		if (!_access_set[i].locked) 
+		if (!_access_set[i].locked)
 			continue;
 		AccessF1 * access = &_access_set[i];
 		if (access->locked)
@@ -67,7 +67,7 @@ F1Manager::cleanup(RC rc)
 			delete it->local_data;
 	}
 	if (rc == ABORT)
-		for (auto ins : _inserts) 
+		for (auto ins : _inserts)
 			delete ins.row;
 
 	_access_set.clear();
@@ -88,7 +88,7 @@ F1Manager::get_row(row_t * row, access_t type, uint64_t key)
 	assert (_txn->get_txn_state() == TxnManager::RUNNING);
 	for (vector<AccessF1>::iterator it = _access_set.begin(); it != _access_set.end(); it ++) {
 		if (it->row == row) {
-			access = &(*it); 
+			access = &(*it);
 			break;
 		}
 	}
@@ -96,40 +96,40 @@ F1Manager::get_row(row_t * row, access_t type, uint64_t key)
 		AccessF1 ac;
 		_access_set.push_back(ac);
 		access = &(*_access_set.rbegin());
-		
+
 		_last_access = access;
 		assert(type == RD || type == WR);
-		
+
 		access->home_node_id = g_node_id;
-		access->row = row; 
+		access->row = row;
 		access->type = type;
-		access->key = key; 
+		access->key = key;
 		access->table_id = row->get_table()->get_table_id();
 		access->data_size = row->get_tuple_size();
 		access->local_data = NULL;
-		
+
 		rc = row->manager->read(_txn, local_data, access->wts);
 		assert(rc == RCOK);
-	} 
-	
+	}
+
 	access->local_data = new char [access->data_size];
 	memcpy(access->local_data, local_data, access->data_size);
-	return rc; 
+	return rc;
 }
 
 RC
 F1Manager::get_row(row_t * row, access_t type, char * &data, uint64_t key)
 {
 	RC rc = get_row(row, type, key);
-	if (rc == RCOK) 
+	if (rc == RCOK)
 		data = _last_access->local_data;
-	return rc;	
+	return rc;
 }
 
 RC
 F1Manager::index_get_permission(access_t type, INDEX * index, uint64_t key, uint32_t limit)
 {
-	assert(type != WR); 
+	assert(type != WR);
 	RC rc = RCOK;
 	IndexAccessF1 * access = NULL;
 	for (uint32_t i = 0; i < _index_access_set.size(); i ++) {
@@ -140,7 +140,7 @@ F1Manager::index_get_permission(access_t type, INDEX * index, uint64_t key, uint
 			return RCOK;
 		}
 	}
-	
+
 	IndexAccessF1 ac;
 	_index_access_set.push_back(ac);
 	access = &(*_index_access_set.rbegin());
@@ -161,7 +161,7 @@ F1Manager::index_get_permission(access_t type, INDEX * index, uint64_t key, uint
 				advance(it, limit);
 				access->rows = new set<row_t *>( rows->begin(), it );
 				assert(access->rows->size() == limit);
-			} else 
+			} else
 				access->rows = new set<row_t *>( *rows );
 		}
 	}
@@ -182,7 +182,7 @@ F1Manager::index_read(INDEX * index, uint64_t key, set<row_t *> * &rows, uint32_
 
 }
 
-RC	
+RC
 F1Manager::index_insert(INDEX * index, uint64_t key)
 {
 	uint64_t tt = get_sys_clock();
@@ -202,14 +202,14 @@ F1Manager::index_delete(INDEX * index, uint64_t key)
 
 
 
-char * 
+char *
 F1Manager::get_data(uint64_t key, uint32_t table_id)
 {
-	for (vector<AccessF1>::iterator it = _access_set.begin(); it != _access_set.end(); it ++) 
+	for (vector<AccessF1>::iterator it = _access_set.begin(); it != _access_set.end(); it ++)
 		if (it->key == key && it->table_id == table_id)
 			return it->local_data;
-	
-	for (vector<AccessF1>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++) 
+
+	for (vector<AccessF1>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++)
 		if (it->key == key && it->table_id == table_id)
 			return it->local_data;
 
@@ -217,7 +217,7 @@ F1Manager::get_data(uint64_t key, uint32_t table_id)
 	return NULL;
 }
 
-RC 
+RC
 F1Manager::register_remote_access(uint32_t remote_node_id, access_t type, uint64_t key, uint32_t table_id)
 {
 	AccessF1 ac;
@@ -225,7 +225,7 @@ F1Manager::register_remote_access(uint32_t remote_node_id, access_t type, uint64
 	AccessF1 * access = &(*_remote_set.rbegin());
 	_last_access = access;
 	assert(remote_node_id != g_node_id);
-	
+
 	access->home_node_id = remote_node_id;
 	access->row = NULL;
 	access->type = type;
@@ -238,10 +238,10 @@ F1Manager::register_remote_access(uint32_t remote_node_id, access_t type, uint64
 void
 F1Manager::add_remote_req_header(UnstructuredBuffer * buffer)
 {
-	buffer->put_front( &_timestamp );	
+	buffer->put_front( &_timestamp );
 }
 
-uint32_t 
+uint32_t
 F1Manager::process_remote_req_header(UnstructuredBuffer * buffer)
 {
 	buffer->get( &_timestamp );
@@ -249,13 +249,13 @@ F1Manager::process_remote_req_header(UnstructuredBuffer * buffer)
 }
 
 void
-F1Manager::get_resp_data(uint32_t &size, char * &data) 
+F1Manager::get_resp_data(uint32_t &size, char * &data)
 {
 	// construct the return message.
 	// Format:
 	//	| n | (key, table_id, wts, tuple_size, data) * n
 	UnstructuredBuffer buffer;
-	uint32_t num_tuples = _access_set.size(); 
+	uint32_t num_tuples = _access_set.size();
 	buffer.put( &num_tuples );
 	vector<AccessF1>::iterator it;
 	for (it = _access_set.begin(); it != _access_set.end(); it ++) {
@@ -270,11 +270,11 @@ F1Manager::get_resp_data(uint32_t &size, char * &data)
 	memcpy(data, buffer.data(), size);
 }
 
-void 
+void
 F1Manager::process_remote_resp(uint32_t node_id, uint32_t size, char * resp_data)
 {
 	// return data format:
-	//		| n | (key, table_id, wts, tuple_size, data) * n 
+	//		| n | (key, table_id, wts, tuple_size, data) * n
 	// store the remote tuple to local access_set.
 	UnstructuredBuffer buffer(resp_data);
 	uint32_t num_tuples;
@@ -289,14 +289,14 @@ F1Manager::process_remote_resp(uint32_t node_id, uint32_t size, char * resp_data
 		assert(node_id == access->home_node_id);
 		buffer.get( &access->wts );
 		buffer.get( &access->data_size );
-		char * data = NULL;  
+		char * data = NULL;
 		buffer.get( data, access->data_size );
 		access->local_data = new char [access->data_size];
 		memcpy(access->local_data, data, access->data_size);
 	}
 }
 
-RC 
+RC
 F1Manager::validate_local_txn()
 {
 	RC rc = RCOK;
@@ -306,11 +306,11 @@ F1Manager::validate_local_txn()
 	{
 		Row_lock::LockType lock_type = (_access_set[i].type == RD)? Row_lock::LOCK_SH : Row_lock::LOCK_EX;
 		rc = _access_set[i].row->manager->lock_get(lock_type, _txn);
-		if (rc == RCOK || rc == WAIT) // after the txn wakes up, the lock will have been acquired. 
+		if (rc == RCOK || rc == WAIT) // after the txn wakes up, the lock will have been acquired.
 			_access_set[i].locked = true;
-		if (rc == WAIT) 
+		if (rc == WAIT)
 			ATOM_ADD_FETCH(_num_lock_waits, 1);
-		
+
 		// validate version number
 		if (_access_set[i].row->manager->get_wts() != _access_set[i].wts) {
 			if (_access_set[i].type == RD) {
@@ -325,15 +325,15 @@ F1Manager::validate_local_txn()
 	}
 	for (uint32_t i = 0; i < _index_access_set.size(); i++) {
 		IndexAccessF1 &access = _index_access_set[i];
-		Row_lock::LockType lock_type = (access.type == RD)? 
+		Row_lock::LockType lock_type = (access.type == RD)?
 			Row_lock::LOCK_SH : Row_lock::LOCK_EX;
 
 		rc = access.manager->lock_get(lock_type, _txn);
-		if (rc == RCOK || rc == WAIT) // after the txn wakes up, the lock will have been acquired. 
+		if (rc == RCOK || rc == WAIT) // after the txn wakes up, the lock will have been acquired.
 			access.locked = true;
-		if (rc == WAIT) 
+		if (rc == WAIT)
 			ATOM_ADD_FETCH(_num_lock_waits, 1);
-		
+
 		// validate version number
 		if (access.manager->get_wts() != access.wts) {
 			if (access.type == RD) {
@@ -354,14 +354,14 @@ F1Manager::validate_local_txn()
 	return rc;
 }
 
-RC 
+RC
 F1Manager::process_prepare_phase_coord()
 {
 	RC rc = RCOK;
 	Isolation isolation = _txn->get_store_procedure()->get_query()->get_isolation_level();
 	if (_pre_abort && isolation == SR) {
 		for (uint32_t i = 0; i < _access_set.size(); i ++)
-			if (_access_set[i].row->manager->get_wts() != _access_set[i].wts) { 
+			if (_access_set[i].row->manager->get_wts() != _access_set[i].wts) {
 				if (_access_set[i].type == RD) {
 					INC_INT_STATS(num_aborts_rs, 1);
 				} else {
@@ -370,7 +370,7 @@ F1Manager::process_prepare_phase_coord()
 				return ABORT;
 			}
 		for (uint32_t i = 0; i < _index_access_set.size(); i ++)
-			if (_index_access_set[i].manager->get_wts() != _index_access_set[i].wts) { 
+			if (_index_access_set[i].manager->get_wts() != _index_access_set[i].wts) {
 				if (_index_access_set[i].type == RD) {
 					INC_INT_STATS(num_aborts_rs, 1);
 				} else {
@@ -383,11 +383,11 @@ F1Manager::process_prepare_phase_coord()
 		rc = validate_local_txn();
 	return rc;
 }
-	
-bool 
+
+bool
 F1Manager::need_prepare_req(uint32_t remote_node_id, uint32_t &size, char * &data)
 {
-	// Format 
+	// Format
 	//	| timestamp |
 	size = sizeof(uint64_t);
 	data = new char [size];
@@ -395,7 +395,7 @@ F1Manager::need_prepare_req(uint32_t remote_node_id, uint32_t &size, char * &dat
 	return true;
 }
 
-RC 
+RC
 F1Manager::process_prepare_req(uint32_t size, char * data, uint32_t &resp_size, char * &resp_data )
 {
 	// if the txn waits/restarts in prepare phase, data will be NULL.
@@ -409,14 +409,14 @@ F1Manager::process_prepare_req(uint32_t size, char * data, uint32_t &resp_size, 
 	return rc;
 }
 
-void 
+void
 F1Manager::process_commit_phase_coord(RC rc)
 {
 	if (rc == COMMIT) {
 		commit_insdel();
 		for (auto &access : _access_set) {
 			if (access.type == WR)
-				access.row->manager->write_data(access.local_data, access.wts + 1); 
+				access.row->manager->write_data(access.local_data, access.wts + 1);
 		}
 	}
 	cleanup(rc);
@@ -425,7 +425,7 @@ F1Manager::process_commit_phase_coord(RC rc)
 RC
 F1Manager::commit_insdel() {
 	// handle inserts
-	for (auto ins : _inserts) { 
+	for (auto ins : _inserts) {
 		row_t * row = ins.row;
 		set<INDEX *> indexes;
 		ins.table->get_indexes( &indexes );
@@ -438,7 +438,7 @@ F1Manager::commit_insdel() {
 	for (auto row : _deletes) {
 		set<INDEX *> indexes;
 		row->get_table()->get_indexes( &indexes );
-		for (auto idx : indexes) 
+		for (auto idx : indexes)
 			idx->remove( row );
 	}
 	for (auto access : _index_access_set)
@@ -448,7 +448,7 @@ F1Manager::commit_insdel() {
 	return RCOK;
 }
 
-bool 
+bool
 F1Manager::need_commit_req(RC rc, uint32_t node_id, uint32_t &size, char * &data)
 {
 	if (rc == ABORT)
@@ -457,12 +457,12 @@ F1Manager::need_commit_req(RC rc, uint32_t node_id, uint32_t &size, char * &data
 	//   | num_writes | (key, table_id, size, data) * num_writes
 	UnstructuredBuffer buffer;
 	uint32_t num_writes = 0;
-	for (vector<AccessF1>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++) 
+	for (vector<AccessF1>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++)
 		if ((it)->home_node_id == node_id && (it)->type == WR)
 			num_writes ++;
 	if (num_writes) {
 		buffer.put( &num_writes );
-		for (vector<AccessF1>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++) 
+		for (vector<AccessF1>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++)
 			if ((it)->home_node_id == node_id && (it)->type == WR) {
 				buffer.put( &(it)->key );
 				buffer.put( &(it)->table_id );
@@ -476,7 +476,7 @@ F1Manager::need_commit_req(RC rc, uint32_t node_id, uint32_t &size, char * &data
 	return true;
 }
 
-void 
+void
 F1Manager::process_commit_req(RC rc, uint32_t size, char * data)
 {
 	assert(!_access_set.empty());
@@ -485,7 +485,7 @@ F1Manager::process_commit_req(RC rc, uint32_t size, char * data)
 		// Format
 		//   | num_writes | (key, table_id, size, data) * num_writes
 		UnstructuredBuffer buffer(data);
-		uint32_t num_writes; 
+		uint32_t num_writes;
 		buffer.get( &num_writes );
 		for (uint32_t i = 0; i < num_writes; i ++) {
 			uint64_t key;

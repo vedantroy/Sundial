@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include "stdint.h"
 #include <iomanip>
@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
-#include <time.h> 
+#include <time.h>
 #include <sys/time.h>
 #include <math.h>
 #include <boost/lockfree/queue.hpp>
@@ -54,7 +54,7 @@ typedef int64_t SInt64;
 typedef uint64_t ts_t; // time stamp type
 
 /******************************************/
-// Global Data Structure 
+// Global Data Structure
 /******************************************/
 extern Stats * stats;
 extern Manager * glob_manager;
@@ -81,7 +81,7 @@ extern uint32_t g_num_server_threads;
 //extern uint32_t g_num_remote_threads;
 
 extern uint32_t g_total_num_threads;
-extern ts_t g_abort_penalty; 
+extern ts_t g_abort_penalty;
 extern uint32_t g_ts_alloc;
 extern bool g_key_order;
 extern bool g_ts_batch_alloc;
@@ -100,7 +100,7 @@ extern double g_read_intensity_thresh;
 // YCSB
 ////////////////////////////
 extern uint32_t g_cc_alg;
-extern double g_perc_remote; 
+extern double g_perc_remote;
 extern double g_read_perc;
 extern double g_zipf_theta;
 extern uint64_t g_synth_table_size;
@@ -132,22 +132,22 @@ extern char ifconfig_file[];
 
 enum RC {RCOK, COMMIT, ABORT, WAIT, LOCAL_MISS, SPECULATE, ERROR, FINISH};
 
-// INDEX 
+// INDEX
 enum latch_t {LATCH_EX, LATCH_SH, LATCH_NONE};
 // accessing type determines the latch type on nodes
 enum idx_acc_t {INDEX_INSERT, INDEX_READ, INDEX_NONE};
 
-// LOOKUP, INS and DEL are operations on indexes. 
+// LOOKUP, INS and DEL are operations on indexes.
 enum access_t {RD, WR, XP, SCAN, INS, DEL};
 
-// TIMESTAMP 
-enum TsType {R_REQ, W_REQ, P_REQ, XP_REQ}; 
+// TIMESTAMP
+enum TsType {R_REQ, W_REQ, P_REQ, XP_REQ};
 enum Isolation {SR, SI, RR, NO_ACID};
 
 #define MSG(str, args...) { \
 	printf("[%s : %d] " str, __FILE__, __LINE__, args); } \
 
-// principal index structure. The workload may decide to use a different 
+// principal index structure. The workload may decide to use a different
 // index structure for specific purposes. (e.g. non-primary key access should use hash)
 #if INDEX_STRUCT == IDX_BTREE
 #define INDEX		index_btree
@@ -155,7 +155,7 @@ enum Isolation {SR, SI, RR, NO_ACID};
 #define INDEX		IndexHash
 #endif
 
-#if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT 
+#if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT
 	class Row_lock;
 	class LockManager;
 	#define ROW_MAN Row_lock
@@ -213,8 +213,8 @@ extern Transport ** transport;
 typedef boost::lockfree::queue<uint64_t, boost::lockfree::capacity<INOUT_QUEUE_SIZE>> InOutQueue;
 extern InOutQueue ** input_queues;
 extern InOutQueue ** output_queues;
-extern ServerThread ** server_threads; 
+extern ServerThread ** server_threads;
 extern uint32_t g_txn_table_size;
-extern TxnTable * txn_table; 
+extern TxnTable * txn_table;
 
 extern FreeQueue * free_queue_txn_man;

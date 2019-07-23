@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include "global.h"
 #include <queue>
@@ -15,7 +15,7 @@ class ServerThread : public Thread {
 public:
 	ServerThread(uint64_t thd_id);
 	RC run();
-	
+
 	void signal();
 
 	TxnManager * get_native_txn() { return _native_txn; }
@@ -29,8 +29,8 @@ private:
 	// wait_buffer
 	set<TxnManager *> _wait_buffer;
 	Message *		_msg;
-	// So only malloc at the beginning 
-	
+	// So only malloc at the beginning
+
 	uint64_t 	_client_node_id;
 	uint64_t 	_num_active_txns;
 	uint64_t 	_max_num_active_txns;

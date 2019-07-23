@@ -17,19 +17,19 @@ public:
 	}
 	virtual ~StoreProcedure();
 
-	void init(); 
+	void init();
 
 	QueryBase * get_query() { return _query; }
 	void set_query(QueryBase * query);
 
 	virtual RC execute() = 0;
-	
+
 	RC process_remote_req(uint32_t size, char * data, uint32_t &resp_size, char * &resp_data);
 
 	virtual void txn_abort();
 	// for a sub transaction
 	bool is_self_abort() { return _self_abort; }
-	
+
 	access_t		_local_miss_type;
 	uint64_t		_local_miss_key;
 	map<uint32_t, UnstructuredBuffer> remote_requests;
@@ -69,7 +69,7 @@ protected:
 				delete cc_specific_msg_data; \
 		}}}}
 
-	
+
 
 	CCManager *		get_cc_manager();
 	QueryBase * 	_query;

@@ -15,7 +15,7 @@
 #include "table.h"
 #include "workload.h"
 
-CCManager * 
+CCManager *
 CCManager::create(TxnManager * txn)
 {
 	return new CC_MAN(txn);
@@ -36,8 +36,8 @@ CCManager::init()
 	_inserts.clear();
 	_remote_node_info.clear();
 }
-	
-StoreProcedure * 
+
+StoreProcedure *
 CCManager::get_store_procedure()
 {
 	return _txn->get_store_procedure();
@@ -47,7 +47,7 @@ RC
 CCManager::row_insert(table_t * table, row_t * row)
 {
 	RC rc = RCOK;
-	_num_lock_waits = 0;	
+	_num_lock_waits = 0;
 	InsertOp insert = {table, row};
 	_inserts.push_back(insert);
 	set<INDEX *> indexes;
@@ -67,7 +67,7 @@ RC
 CCManager::row_delete(row_t * row)
 {
 	RC rc = RCOK;
-	_num_lock_waits = 0;	
+	_num_lock_waits = 0;
 	_deletes.push_back(row);
 	set<INDEX *> indexes;
 	row->get_table()->get_indexes( &indexes );
@@ -78,28 +78,28 @@ CCManager::row_delete(row_t * row)
 		if (rc1 == WAIT)
 			rc = WAIT;
 	}
-	return rc; 
+	return rc;
 }
 
 void
 CCManager::add_remote_node_info(uint32_t node_id, bool is_write)
 {
-	if (_remote_node_info.find(node_id) == _remote_node_info.end()) {	
+	if (_remote_node_info.find(node_id) == _remote_node_info.end()) {
 		RemoteNodeInfo info;
-		info.node_id = node_id; 
+		info.node_id = node_id;
 		_remote_node_info.insert(pair<uint32_t, RemoteNodeInfo>(node_id, info));
 	}
-	_remote_node_info[node_id].has_write |= is_write;  
+	_remote_node_info[node_id].has_write |= is_write;
 }
 
 void
 CCManager::get_remote_nodes_with_writes(set<uint32_t> * nodes)
 {
 	assert(nodes->empty());
-	for (map<uint32_t, RemoteNodeInfo>::iterator it = _remote_node_info.begin(); 
-		it != _remote_node_info.end(); it ++) 
+	for (map<uint32_t, RemoteNodeInfo>::iterator it = _remote_node_info.begin();
+		it != _remote_node_info.end(); it ++)
 	{
-		if (it->second.has_write)	
+		if (it->second.has_write)
 			nodes->insert(it->first);
 	}
 }

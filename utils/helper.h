@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include <cstdlib>
 #include <iostream>
@@ -27,13 +27,13 @@
 	stringstream sstream; sstream << msg; cout << sstream.str();
 
 #define COMPILER_BARRIER asm volatile("" ::: "memory");
-// on draco, each pause takes approximately 3.7 ns. 
+// on draco, each pause takes approximately 3.7 ns.
 #define PAUSE __asm__ ( "pause;" );
 #define PAUSE10 \
 	PAUSE PAUSE PAUSE PAUSE PAUSE \
 	PAUSE PAUSE PAUSE PAUSE PAUSE
 
-// about 370 ns. 
+// about 370 ns.
 #define PAUSE100 \
 	PAUSE10	PAUSE10	PAUSE10	PAUSE10	PAUSE10 \
 	PAUSE10	PAUSE10	PAUSE10	PAUSE10	PAUSE10
@@ -66,7 +66,7 @@
 //////////////////////////////////////////////////
 // Global Data Structure
 //////////////////////////////////////////////////
-#define GET_WORKLOAD glob_manager->get_workload() 
+#define GET_WORKLOAD glob_manager->get_workload()
 #define GLOBAL_NODE_ID g_node_id
 #define GET_THD_ID glob_manager->get_thd_id()
 
@@ -116,8 +116,8 @@
 	;
 
 #define INC_TMP_STATS(tid, name, value) \
-	; 
-	
+	;
+
 #define INC_GLOB_STATS(name, value) \
 	if (STATS_ENABLE) \
 		stats->name += value;
@@ -146,7 +146,7 @@
 #define DELETE(type, block) { delete block; }
 
 
-#define ALIGNED(x) __attribute__ ((aligned(x))) 
+#define ALIGNED(x) __attribute__ ((aligned(x)))
 
 int get_thdid_from_txnid(uint64_t txnid);
 
@@ -154,8 +154,8 @@ int get_thdid_from_txnid(uint64_t txnid);
 uint64_t key_to_part(uint64_t key);
 uint64_t get_part_id(void * addr);
 
-uint64_t txn_id_to_node_id(uint64_t txn_id); 
-uint64_t txn_id_to_thread_id(uint64_t txn_id); 
+uint64_t txn_id_to_node_id(uint64_t txn_id);
+uint64_t txn_id_to_thread_id(uint64_t txn_id);
 
 extern timespec * res;
 inline uint64_t get_server_clock() {
@@ -167,7 +167,7 @@ inline uint64_t get_server_clock() {
     __asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
     uint64_t ret = ( (uint64_t)lo)|( ((uint64_t)hi)<<32 );
 	ret = (uint64_t) ((double)ret / CPU_FREQ);
-#else 
+#else
 	timespec * tp = new timespec;
     clock_gettime(CLOCK_REALTIME, tp);
     uint64_t ret = tp->tv_sec * 1000000000 + tp->tv_nsec;

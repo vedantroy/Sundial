@@ -1,14 +1,14 @@
-#pragma once 
+#pragma once
 
 #include "cc_manager.h"
 #include "txn.h"
 
-class TCMManager : public CCManager 
+class TCMManager : public CCManager
 {
 public:
 	TCMManager(TxnManager * txn);
-	~TCMManager() {}	
-	
+	~TCMManager() {}
+
 	RC 			get_row(row_t * row, access_t type, uint64_t key);
 	RC 			get_row(row_t * row, access_t type, char * &data, uint64_t key);
 	char * 		get_data( uint64_t key, uint32_t table_id);
@@ -31,12 +31,12 @@ public:
 	uint64_t 	get_priority() { return _timestamp; }
 	bool 		is_txn_ready();
 	void 		set_txn_ready(RC rc);
-	
+
 	// Prepare Phase
-	RC 			process_prepare_phase_coord(); 
+	RC 			process_prepare_phase_coord();
 	RC 			process_prepare_req(uint32_t size, char * data, uint32_t &resp_size, char * &resp_data);
 	void 		process_prepare_resp(RC rc, uint32_t node_id, char * data);
-	
+
 	// commit phase
 	RC			compute_ts_range();
 	void 		process_commit_phase_coord(RC rc);
@@ -50,25 +50,25 @@ private:
 		char *		data;	// original data.
 		uint32_t 	data_size;
 	};
-	
+
 	AccessLock * find_access(uint64_t key, uint32_t table_id, vector<AccessLock> * set);
-	
+
 	vector<AccessLock>		_access_set;
 	vector<AccessLock>		_remote_set;
 	vector<IndexAccess>		_index_access_set;
 	AccessLock * 			_last_access;
 
 	bool 					_lock_ready;
-public:	
-	// TCM specific transaction attributes  
-	volatile uint64_t 				early; 
-	volatile uint64_t 				late; 
+public:
+	// TCM specific transaction attributes
+	volatile uint64_t 				early;
+	volatile uint64_t 				late;
 	volatile bool					end;
 	volatile TxnManager::State 		state;
 	volatile uint64_t 				timestamp;
 	// TODO
 	void 							try_abort(); //  { return false; };
-   
+
 	void 		latch() 			{ pthread_mutex_lock(_latch); }
 	bool		try_latch() 		{ return pthread_mutex_trylock(_latch) == 0; }
 	void 		unlatch() 			{ pthread_mutex_unlock(_latch); }

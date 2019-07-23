@@ -26,7 +26,7 @@ LockManager::LockManager(TxnManager * txn)
 #endif
 }
 
-RC 
+RC
 LockManager::get_row(row_t * row, access_t type, uint64_t key)
 {
 	RC rc = RCOK;
@@ -34,11 +34,11 @@ LockManager::get_row(row_t * row, access_t type, uint64_t key)
 	Isolation isolation = SR;
 	if (!_txn->is_sub_txn())
 		isolation = _txn->get_store_procedure()->get_query()->get_isolation_level();
-	AccessLock * access = NULL; 
+	AccessLock * access = NULL;
 
 	for (vector<AccessLock>::iterator it = _access_set.begin(); it != _access_set.end(); it ++) {
 		if (it->row == row) {
-			access = &(*it); 
+			access = &(*it);
 			break;
 		}
 	}
@@ -58,7 +58,7 @@ LockManager::get_row(row_t * row, access_t type, uint64_t key)
 		access->row = row;
 		access->data = NULL;
 		access->data_size = row->get_tuple_size();
-		if (rc == WAIT) { 
+		if (rc == WAIT) {
 			ATOM_ADD_FETCH(_num_lock_waits, 1);
 		}
 		if (rc != RCOK)
@@ -66,10 +66,10 @@ LockManager::get_row(row_t * row, access_t type, uint64_t key)
 	}
 	if (type == WR) {
 		assert(access->data == NULL);
-		access->data = new char [access->row->get_tuple_size()]; 
+		access->data = new char [access->row->get_tuple_size()];
 		memcpy(access->data, access->row->get_data(), access->row->get_tuple_size());
 	}
-	return rc;	
+	return rc;
 }
 
 RC
@@ -84,11 +84,11 @@ LockManager::get_row(row_t * row, access_t type, char * &data, uint64_t key)
 char *
 LockManager::get_data( uint64_t key, uint32_t table_id)
 {
-	for (vector<AccessLock>::iterator it = _access_set.begin(); it != _access_set.end(); it ++) 
+	for (vector<AccessLock>::iterator it = _access_set.begin(); it != _access_set.end(); it ++)
 		if (it->key == key && it->table_id == table_id)
 			return it->data;
-	
-	for (vector<AccessLock>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++) 
+
+	for (vector<AccessLock>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++)
 		if (it->key == key && it->table_id == table_id)
 			return it->data;
 
@@ -96,14 +96,14 @@ LockManager::get_data( uint64_t key, uint32_t table_id)
 	return NULL;
 }
 
-RC 
+RC
 LockManager::register_remote_access(uint32_t remote_node_id, access_t type, uint64_t key, uint32_t table_id)
 {
 	AccessLock ac;
 	_remote_set.push_back(ac);
 	AccessLock * access = &(*_remote_set.rbegin());
 	assert(remote_node_id != g_node_id);
-	
+
 	access->home_node_id = remote_node_id;
 	access->row = NULL;
 	access->type = type;
@@ -114,7 +114,7 @@ LockManager::register_remote_access(uint32_t remote_node_id, access_t type, uint
 }
 
 RC
-LockManager::index_get_permission(access_t type, INDEX * index, uint64_t key, uint32_t limit) 
+LockManager::index_get_permission(access_t type, INDEX * index, uint64_t key, uint32_t limit)
 {
 	RC rc = RCOK;
 	for (uint32_t i = 0; i < _index_access_set.size(); i++) {
@@ -135,21 +135,21 @@ LockManager::index_get_permission(access_t type, INDEX * index, uint64_t key, ui
 		}
 	}
 	Row_lock * manager = index->index_get_manager(key);
-	if (type == RD || type == WR) 
+	if (type == RD || type == WR)
 		rc = manager->lock_get(Row_lock::LOCK_SH, _txn, false);
-	else // if (type == INS || type == DEL) 
+	else // if (type == INS || type == DEL)
 		rc = manager->lock_get(Row_lock::LOCK_EX, _txn, false);
 	manager->unlatch();
 	if (rc == ABORT)
 		return ABORT;
-	
+
 	IndexAccess access;
 	access.key = key;
 	access.index = index;
 	access.type = type;
-	access.manager = manager; 
-	
-	if (rc == RCOK && type == RD) 
+	access.manager = manager;
+
+	if (rc == RCOK && type == RD)
 		access.rows = index->read(key);
 	_index_access_set.push_back(access);
 
@@ -159,7 +159,7 @@ LockManager::index_get_permission(access_t type, INDEX * index, uint64_t key, ui
 	return rc;
 }
 
-RC 
+RC
 LockManager::index_read(INDEX * index, uint64_t key, set<row_t *> * &rows, uint32_t limit)
 {
 	RC rc = RCOK;
@@ -181,7 +181,7 @@ LockManager::index_insert(INDEX * index, uint64_t key)
 	return rc;
 }
 
-RC	
+RC
 LockManager::index_delete(INDEX * index, uint64_t key)
 {
 	uint64_t tt = get_sys_clock();
@@ -195,23 +195,23 @@ void
 LockManager::add_remote_req_header(UnstructuredBuffer * buffer)
 {
 #if CC_ALG == WAIT_DIE
-	buffer->put_front( &_timestamp );	
+	buffer->put_front( &_timestamp );
 #endif
 }
 
-uint32_t 
+uint32_t
 LockManager::process_remote_req_header(UnstructuredBuffer * buffer)
 {
 #if CC_ALG == WAIT_DIE
 	buffer->get( &_timestamp );
 	return sizeof(_timestamp);
-#else 
+#else
 	return 0;
 #endif
 }
 
-void 
-LockManager::cleanup(RC rc) 
+void
+LockManager::cleanup(RC rc)
 {
 	assert(rc == COMMIT || rc == ABORT);
 	Isolation isolation = SR;
@@ -220,16 +220,16 @@ LockManager::cleanup(RC rc)
 	for (uint32_t i = 0; i < _access_set.size(); i ++)
 	{
 		AccessLock * access = &_access_set[i];
-		access_t type = access->type; 
+		access_t type = access->type;
 		if (type == WR && rc == ABORT)
 			access->row->copy(access->data);
 		if (isolation != NO_ACID)
 			access->row->manager->lock_release(_txn, rc);
-		
+
 		if (type == WR) {
 			assert(access->data);
 			delete access->data;
-		} else 
+		} else
 			assert(access->data == NULL);
 	}
 	for (vector<AccessLock>::iterator it = _remote_set.begin();
@@ -242,7 +242,7 @@ LockManager::cleanup(RC rc)
 		access.manager->lock_release(_txn, rc);
 	}
 	if (rc == ABORT)
-		for (auto ins : _inserts) 
+		for (auto ins : _inserts)
 			delete ins.row;
 	_num_lock_waits = 0;
 	_access_set.clear();
@@ -251,28 +251,28 @@ LockManager::cleanup(RC rc)
 	_deletes.clear();
 	_index_access_set.clear();
 }
-	
-bool 
+
+bool
 LockManager::is_txn_ready()
 {
 	return _num_lock_waits == 0;
 }
-	
-void 
-LockManager::set_txn_ready(RC rc) 
+
+void
+LockManager::set_txn_ready(RC rc)
 {
 	assert(rc == RCOK);
 	ATOM_SUB_FETCH(_num_lock_waits, 1);
 }
 
 void
-LockManager::get_resp_data(uint32_t &size, char * &data) 
+LockManager::get_resp_data(uint32_t &size, char * &data)
 {
 	// construct the return message.
 	// Format:
 	//	| n | (key, table_id, tuple_size, data) * n
 	UnstructuredBuffer buffer;
-	uint32_t num_tuples = _access_set.size(); 
+	uint32_t num_tuples = _access_set.size();
 	buffer.put( &num_tuples );
 	vector<AccessLock>::iterator it;
 	for (it = _access_set.begin(); it != _access_set.end(); it ++) {
@@ -297,11 +297,11 @@ LockManager::find_access(uint64_t key, uint32_t table_id, vector<AccessLock> * s
 }
 
 
-void 
+void
 LockManager::process_remote_resp(uint32_t node_id, uint32_t size, char * resp_data)
 {
 	// return data format:
-	//		| n | (key, table_id, tuple_size, data) * n 
+	//		| n | (key, table_id, tuple_size, data) * n
 	// store the remote tuple to local access_set.
 	UnstructuredBuffer buffer(resp_data);
 	uint32_t num_tuples;
@@ -315,7 +315,7 @@ LockManager::process_remote_resp(uint32_t node_id, uint32_t size, char * resp_da
 		AccessLock * access = find_access(key, table_id, &_remote_set);
 		assert(access && node_id == access->home_node_id);
 		buffer.get( &access->data_size );
-		char * data = NULL;  
+		char * data = NULL;
 		buffer.get( data, access->data_size );
 		access->data = new char [access->data_size];
 		memcpy(access->data, data, access->data_size);
@@ -323,28 +323,28 @@ LockManager::process_remote_resp(uint32_t node_id, uint32_t size, char * resp_da
 }
 
 RC
-LockManager::process_prepare_req(uint32_t size, char * data, uint32_t &resp_size, char * &resp_data) 
+LockManager::process_prepare_req(uint32_t size, char * data, uint32_t &resp_size, char * &resp_data)
 {
 	assert(size == 0 && data == NULL);
 	for (auto access : _access_set)	{
 		if (access.type == WR)
 			return RCOK;
 	}
-	// this sub_txn is read only. 		
+	// this sub_txn is read only.
 	cleanup(COMMIT);
 	return COMMIT;
 }
 
-void 
+void
 LockManager::process_commit_phase_coord(RC rc)
 {
-	if (rc == COMMIT) 
+	if (rc == COMMIT)
 		commit_insdel();
 	cleanup(rc);
 	return;
 }
 
-bool 
+bool
 LockManager::need_commit_req(RC rc, uint32_t node_id, uint32_t &size, char * &data)
 {
 	if (rc == ABORT)
@@ -353,12 +353,12 @@ LockManager::need_commit_req(RC rc, uint32_t node_id, uint32_t &size, char * &da
 	//   | num_writes | (key, table_id, size, data) * num_writes
 	UnstructuredBuffer buffer;
 	uint32_t num_writes = 0;
-	for (vector<AccessLock>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++) 
+	for (vector<AccessLock>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++)
 		if ((it)->home_node_id == node_id && (it)->type == WR)
 			num_writes ++;
 	if (num_writes) {
 		buffer.put( &num_writes );
-		for (vector<AccessLock>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++) 
+		for (vector<AccessLock>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++)
 			if ((it)->home_node_id == node_id && (it)->type == WR) {
 				buffer.put( &(it)->key );
 				buffer.put( &(it)->table_id );
@@ -368,13 +368,13 @@ LockManager::need_commit_req(RC rc, uint32_t node_id, uint32_t &size, char * &da
 		size = buffer.size();
 		data = new char [size];
 		memcpy(data, buffer.data(), size);
-		return true;	
+		return true;
 	} else
-		// read only txn, no need to commit. 
+		// read only txn, no need to commit.
 		return false;
 }
 
-void 
+void
 LockManager::process_commit_req(RC rc, uint32_t size, char * data)
 {
 	if (size > 0) {
@@ -382,7 +382,7 @@ LockManager::process_commit_req(RC rc, uint32_t size, char * data)
 		// Format
 		//   | num_writes | (key, table_id, size, data) * num_writes
 		UnstructuredBuffer buffer(data);
-		uint32_t num_writes; 
+		uint32_t num_writes;
 		buffer.get( &num_writes );
 		for (uint32_t i = 0; i < num_writes; i ++) {
 			uint64_t key;
@@ -400,7 +400,7 @@ LockManager::process_commit_req(RC rc, uint32_t size, char * data)
 	cleanup(rc);
 }
 
-void 
+void
 LockManager::abort()
 {
 	cleanup(ABORT);
@@ -411,7 +411,7 @@ LockManager::commit_insdel()
 {
 	// TODO. Ignoring index consistency.
 	// handle inserts
-	for (auto ins : _inserts) { 
+	for (auto ins : _inserts) {
 		row_t * row = ins.row;
 		set<INDEX *> indexes;
 		ins.table->get_indexes( &indexes );
@@ -424,10 +424,10 @@ LockManager::commit_insdel()
 	for (auto row : _deletes) {
 		set<INDEX *> indexes;
 		row->get_table()->get_indexes( &indexes );
-		for (auto idx : indexes) 
+		for (auto idx : indexes)
 			idx->remove( row );
-		for (vector<AccessLock>::iterator it = _access_set.begin(); 
-			 it != _access_set.end(); it ++) 
+		for (vector<AccessLock>::iterator it = _access_set.begin();
+			 it != _access_set.end(); it ++)
 		{
 			if (it->row == row) {
 				_access_set.erase(it);

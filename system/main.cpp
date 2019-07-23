@@ -30,9 +30,9 @@ int main(int argc, char* argv[])
 
 	// g_num_worker_threads is the # of server threads running on each node
 	g_num_worker_threads = g_num_server_threads;
-	
+
 	for (uint32_t i = 0; i < g_num_input_threads; i ++)
-		transport[i]->test_connect();	
+		transport[i]->test_connect();
 
 	g_total_num_threads = g_num_worker_threads + g_num_input_threads + g_num_output_threads;
 
@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
 		output_queues[i] = (InOutQueue *) _mm_malloc(sizeof(InOutQueue), 64);
 		new (output_queues[i]) InOutQueue;
 	}
-  #if CC_ALG == TICTOC && ENABLE_LOCAL_CACHING 
+  #if CC_ALG == TICTOC && ENABLE_LOCAL_CACHING
 	local_cache_man = new CacheManager;
   #endif
 
@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
 	glob_manager->init();
 	txn_table = new TxnTable();
 	log_manager = new LogManager();
-	
+
 	printf("mem_allocator initialized!\n");
 	workload * m_wl;
 	switch (WORKLOAD) {
@@ -64,16 +64,16 @@ int main(int argc, char* argv[])
 			QueryYCSB::calculateDenom();
 			break;
 		case TPCC :
-			m_wl = new WorkloadTPCC; 
+			m_wl = new WorkloadTPCC;
 			break;
 		default:
 			assert(false);
-	}	
+	}
 
 	glob_manager->set_workload(m_wl);
 	m_wl->init();
 	printf("workload initialized!\n");
-	
+
 	Thread ** worker_threads;
 	server_threads = new ServerThread * [g_num_worker_threads];
 	for (uint32_t i = 0; i < g_num_worker_threads; i++)
@@ -89,24 +89,24 @@ int main(int argc, char* argv[])
 	pthread_mutex_init( &global_lock, NULL);
 
 	warmup_finish = true;
-	
-	pthread_t pthreads[g_num_worker_threads + g_num_input_threads + g_num_output_threads]; 
+
+	pthread_t pthreads[g_num_worker_threads + g_num_input_threads + g_num_output_threads];
 	// spawn and run txns
 	timespec * tp = new timespec;
     clock_gettime(CLOCK_REALTIME, tp);
     uint64_t start_t = tp->tv_sec * 1000000000 + tp->tv_nsec;
 
 	int64_t starttime = get_server_clock();
-	for (uint64_t i = 0; i < g_num_worker_threads - 1; i++) 
+	for (uint64_t i = 0; i < g_num_worker_threads - 1; i++)
 		pthread_create(&pthreads[i], NULL, start_thread, (void *)worker_threads[i]);
 	for (uint64_t i = 0; i < g_num_input_threads; i++)
 		pthread_create(&pthreads[g_num_worker_threads + i], NULL, start_thread, (void *)input_threads[i]);
 	for (uint64_t i = 0; i < g_num_output_threads; i++)
 		pthread_create(&pthreads[g_num_worker_threads + g_num_input_threads + i], NULL, start_thread, (void *)output_threads[i]);
-	
+
 	start_thread((void *)(worker_threads[g_num_worker_threads - 1]));
-	
-	for (uint32_t i = 0; i < g_num_worker_threads - 1; i++) 
+
+	for (uint32_t i = 0; i < g_num_worker_threads - 1; i++)
 		pthread_join(pthreads[i], NULL);
 	for (uint64_t i = 0; i < g_num_input_threads + g_num_output_threads; i++)
 		pthread_join(pthreads[g_num_worker_threads + i], NULL);
@@ -116,11 +116,11 @@ int main(int argc, char* argv[])
 	int64_t endtime = get_server_clock();
 	int64_t runtime = end_t - start_t;
 	if (abs(1.0 * runtime / (endtime - starttime) - 1) > 0.01)
-		M_ASSERT(false, "the CPU_FREQ is inaccurate! correct value should be %f\n", 
-			1.0 * runtime / (endtime - starttime) * CPU_FREQ);
+		M_ASSERT(false, "the CPU_FREQ is inaccurate! correct value should be %f\n",
+			1.0 * (endtime - starttime) / runtime * CPU_FREQ);
 	printf("PASS! SimTime = %ld\n", endtime - starttime);
-  
-#if CC_ALG == TICTOC && ENABLE_LOCAL_CACHING 
+
+#if CC_ALG == TICTOC && ENABLE_LOCAL_CACHING
 	delete local_cache_man;
 #endif
 	if (STATS_ENABLE)

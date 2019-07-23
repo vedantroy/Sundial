@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 #include "global.h"
 #include "helper.h"
 
@@ -8,7 +8,7 @@ enum StatsFloat {
 	// Worker Thread
 	STAT_run_time,
 	STAT_txn_latency,
-	
+
 	STAT_time_read_input_queue,
 	STAT_time_process_txn,
 	STAT_time_waiting_for_job,
@@ -16,14 +16,14 @@ enum StatsFloat {
 	STAT_time_abort_queue,
 	STAT_time_idle,
 	STAT_time_write_output_queue,
-	
+
 	// Logging
 	STAT_log_size,
 
 	// Output Thread
 	STAT_bytes_sent,
 	STAT_dummy_bytes_sent,
-	STAT_time_send_msg, 
+	STAT_time_send_msg,
 	STAT_time_read_queue, // read output_queue
 	STAT_time_output_idle,
 
@@ -39,7 +39,7 @@ enum StatsFloat {
 	STAT_prepare_phase,
 	STAT_commit_phase,
 	STAT_abort,
-	
+
 	STAT_row,
 	STAT_index,
 	STAT_logic,
@@ -64,9 +64,9 @@ enum StatsInt {
 	STAT_num_aborts,
 	STAT_num_waits,
 
-	STAT_num_home_txn, // txn mapped to this node. 
+	STAT_num_home_txn, // txn mapped to this node.
 	STAT_num_remote_txn,
-	
+
 	// For TicToc
 	// Abort breakdown
 	STAT_num_aborts_ws,
@@ -75,13 +75,13 @@ enum StatsInt {
 	STAT_num_aborts_remote,
 	STAT_num_aborts_execute,
 	STAT_num_pre_aborts,
-	
+
 	STAT_num_aborts_restart,
 	STAT_num_aborts_terminate,
 
 	STAT_num_renewals,
 	STAT_num_no_need_to_renewal,
-	
+
 	// For local caching
 	STAT_num_cache_bypass,
 	STAT_num_cache_reads,
@@ -92,7 +92,7 @@ enum StatsInt {
 	STAT_num_cache_updates,
 	STAT_num_cache_evictions,
 
-	STAT_num_local_hits,		
+	STAT_num_local_hits,
 	STAT_num_renew,
 	STAT_num_renew_success,
 	STAT_num_renew_failure,
@@ -135,10 +135,10 @@ public:
 
 	void init(uint64_t thd_id);
 	void clear();
-	
+
 	double * _float_stats;
 	uint64_t * _int_stats;
-	
+
 #if COLLECT_LATENCY
 	vector<double> all_latency;
 #endif
@@ -150,7 +150,7 @@ public:
 	uint64_t _commits_per_txn_type[5];
 	uint64_t _aborts_per_txn_type[5];
 	uint64_t _time_per_txn_type[5];
-#endif 
+#endif
 };
 
 class Stats {
@@ -158,14 +158,14 @@ public:
 	Stats();
 	// PER THREAD statistics
 	Stats_thd ** _stats;
-	
+
 	// GLOBAL statistics
 	double dl_detect_time;
 	double dl_wait_time;
 	uint64_t cycle_detect;
-	uint64_t deadlock;	
-	
-	// output thread	
+	uint64_t deadlock;
+
+	// output thread
 	uint64_t bytes_sent;
 	uint64_t bytes_recv;
 
@@ -175,17 +175,17 @@ public:
 	void clear(uint64_t tid);
 	void print();
 	void print_lat_distr();
-	
+
 	void checkpoint();
 	void copy_from(Stats * stats);
-		
-	void output(std::ostream * os); 
-	
+
+	void output(std::ostream * os);
+
 	std::string statsFloatName[NUM_FLOAT_STATS] = {
 		// worker thread
 		"run_time",
 		"average_latency",
-		
+
 		"time_read_input_queue",
 		"time_process_txn",
 		"time_waiting_for_job",
@@ -193,7 +193,7 @@ public:
 		"time_abort_queue",
 		"time_idle",
 		"time_write_output_queue",
-		
+
 		// Logging
 		"log_size",
 
@@ -216,7 +216,7 @@ public:
 		"prepare_phase",
 		"commit_phase",
 		"abort",
-	
+
 		"CC (row)",
 		"CC (index)",
 		"logic",
@@ -241,7 +241,7 @@ public:
 
 		"num_home_txn",
 		"num_remote_txn",
-		
+
 		// TicToc abort breakdown
 		"num_aborts_ws",
 		"num_aborts_rs",
@@ -249,13 +249,13 @@ public:
 		"num_aborts_remote",
 		"num_aborts_execute",
 		"num_pre_aborts",
-		
+
 		"num_aborts_restart",
 		"num_aborts_terminate",
-	
+
 		"num_renewals",
 		"num_no_need_to_renewal",
-	
+
 		// For local caching
 		"num_cache_bypass",
 		"num_cache_reads",
@@ -267,11 +267,11 @@ public:
 		"num_cache_updates",
 		"num_cache_evictions",
 
-		"num_local_hits",		
+		"num_local_hits",
 		"num_renew",
 		"num_renew_success",
 		"num_renew_failure",
-	
+
 		// for READ_INTENSIVE
 		"num_ro_read",
 		"num_ro_check",

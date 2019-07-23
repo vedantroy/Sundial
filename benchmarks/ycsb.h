@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include "workload.h"
 #include "txn.h"
@@ -14,12 +14,12 @@ public :
 	RC init();
 	RC init_schema(string schema_file);
 	StoreProcedure * create_store_procedure(TxnManager * txn, QueryBase * query);
-	QueryBase * gen_query(); 
-	QueryBase * clone_query(QueryBase * query); 
+	QueryBase * gen_query();
+	QueryBase * clone_query(QueryBase * query);
 	QueryBase * deserialize_subquery(char * data);
-	
+
 	uint64_t 	get_primary_key(row_t * row);
-	uint64_t 	get_index_key(row_t * row, uint32_t index_id) 
+	uint64_t 	get_index_key(row_t * row, uint32_t index_id)
 	{ return get_primary_key(row); }
 	INDEX * 	get_index() { return the_index; }
 	INDEX * 	get_index(uint32_t index_id) { return the_index; }
@@ -34,7 +34,7 @@ private:
 	void init_table_parallel();
 	void * init_table_slice();
 	static void * threadInitTable(void * This) {
-		((WorkloadYCSB *)This)->init_table_slice(); 
+		((WorkloadYCSB *)This)->init_table_slice();
 		return NULL;
 	}
 	pthread_mutex_t insert_lock;

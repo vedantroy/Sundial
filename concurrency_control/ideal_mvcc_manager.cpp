@@ -17,7 +17,7 @@
 #include "query.h"
 #if CC_ALG == IDEAL_MVCC
 
-bool MVCCManager::_pre_abort = PRE_ABORT; 
+bool MVCCManager::_pre_abort = PRE_ABORT;
 
 
 MVCCManager::MVCCManager(TxnManager * txn)
@@ -28,22 +28,22 @@ MVCCManager::MVCCManager(TxnManager * txn)
 	_validation_no_wait = true;
 
 	_max_wts = 0;
-	_write_copy_ptr = false; 
-	_atomic_timestamp = false; 
-	
+	_write_copy_ptr = false;
+	_atomic_timestamp = false;
+
 	_timestamp = glob_manager->get_ts(GET_THD_ID);
 	_num_lock_waits = 0;
 	_signal_abort = false;
-	commit_ts = -1;  	
+	commit_ts = -1;
 
 	LEASE = 10;
-	
+
 	if (!_txn->is_sub_txn()) {
 		glob_manager->get_max_cts();
 	}
 }
 
-void 
+void
 MVCCManager::cleanup(RC rc)
 {
 	split_read_write_set();
@@ -51,8 +51,8 @@ MVCCManager::cleanup(RC rc)
 	for (vector<AccessMVCC>::iterator it = _access_set.begin();
 		it != _access_set.end(); it ++)
 	{
-		if (it->local_data) 
-			delete it->local_data; 
+		if (it->local_data)
+			delete it->local_data;
 		it->local_data = NULL;
 	}
 	for (vector<AccessMVCC>::iterator it = _remote_set.begin();
@@ -61,38 +61,38 @@ MVCCManager::cleanup(RC rc)
 		if (it->local_data)
 			delete it->local_data;
 	}
-	
-	for (vector<IndexAccessMVCC>::iterator it = _index_access_set.begin(); 
-		it != _index_access_set.end(); it ++ ) 
+
+	for (vector<IndexAccessMVCC>::iterator it = _index_access_set.begin();
+		it != _index_access_set.end(); it ++ )
 	{
 		if (it->rows)
 			delete it->rows;
 	}
 	if (rc == ABORT)
-		for (auto ins : _inserts) 
+		for (auto ins : _inserts)
 			delete ins.row;
 	_access_set.clear();
 	_remote_set.clear();
 	_index_access_set.clear();
-	
+
 	_read_set.clear();
 	_write_set.clear();
-	
+
 	_inserts.clear();
 	_deletes.clear();
 }
 
 
 RC
-MVCCManager::register_remote_access(uint32_t remote_node_id, access_t type, uint64_t key, 
-									   uint32_t table_id, uint32_t &msg_size, char * &msg_data) 
+MVCCManager::register_remote_access(uint32_t remote_node_id, access_t type, uint64_t key,
+									   uint32_t table_id, uint32_t &msg_size, char * &msg_data)
 {
 	AccessMVCC ac;
 	_remote_set.push_back(ac);
 	AccessMVCC * access = &(*_remote_set.rbegin());
 	_last_access = access;
 	assert(remote_node_id != g_node_id);
-	
+
 	access->home_node_id = remote_node_id;
 	access->row = NULL;
 	access->type = type;
@@ -102,7 +102,7 @@ MVCCManager::register_remote_access(uint32_t remote_node_id, access_t type, uint
 	return LOCAL_MISS;
 }
 
-RC 
+RC
 MVCCManager::register_remote_access(uint32_t remote_node_id, access_t type, uint64_t key, uint32_t table_id)
 {
 	assert(!ENABLE_LOCAL_CACHING);
@@ -112,7 +112,7 @@ MVCCManager::register_remote_access(uint32_t remote_node_id, access_t type, uint
 }
 
 
-RC 
+RC
 MVCCManager::get_row(row_t * row, access_t type, uint64_t key)
 {
 	return get_row(row, type, key, -1);
@@ -124,11 +124,11 @@ MVCCManager::get_row(row_t * row, access_t type, uint64_t key, uint64_t wts)
 	RC rc = RCOK;
 	char local_data[row->get_tuple_size()];
 	assert (_txn->get_txn_state() == TxnManager::RUNNING);
-	
-	AccessMVCC * access = NULL; 
+
+	AccessMVCC * access = NULL;
 	for (vector<AccessMVCC>::iterator it = _access_set.begin(); it != _access_set.end(); it ++) {
 		if (it->row == row) {
-			access = &(*it); 
+			access = &(*it);
 			break;
 		}
 	}
@@ -138,16 +138,16 @@ MVCCManager::get_row(row_t * row, access_t type, uint64_t key, uint64_t wts)
 		_access_set.push_back(ac);
 		access = &(*_access_set.rbegin());
 		_last_access = access;
-		
+
 		access->home_node_id = g_node_id;
-		access->row = row; 
+		access->row = row;
 		access->type = type;
 		assert(type == RD || type == WR);
-		access->key = key; 
+		access->key = key;
 		access->table_id = row->get_table()->get_table_id();
 		access->data_size = row->get_tuple_size();
 		access->local_data = NULL;
-		
+
 		assert(access->row->table);
 		if (type == RD || !OCC_WAW_LOCK) {
 			rc = row->manager->read(_txn, local_data, access->wts, access->rts, commit_ts);
@@ -162,12 +162,12 @@ MVCCManager::get_row(row_t * row, access_t type, uint64_t key, uint64_t wts)
 				return rc;
 			}
 		}
-	} else 
+	} else
 		assert(type == WR && OCC_WAW_LOCK);
 
 	// TODO. If the locally cached copy is too old. Also treat it as a local miss.
-	// However, the miss request contains the wts of the cached tuple. So the response 
-	// can be a renewal. 
+	// However, the miss request contains the wts of the cached tuple. So the response
+	// can be a renewal.
 	if (type == WR)
 		_is_read_only = false;
 	access->local_data = new char [access->data_size];
@@ -179,14 +179,14 @@ MVCCManager::get_row(row_t * row, access_t type, uint64_t key, uint64_t wts)
 		access->locked = true;
 	}
 	assert(rc == RCOK);
-	return rc; 
+	return rc;
 
 }
 
 RC
 MVCCManager::index_get_permission(access_t type, INDEX * index, uint64_t key, uint32_t limit)
 {
-	assert(type != WR); 
+	assert(type != WR);
 	RC rc = RCOK;
 	IndexAccessMVCC * access = NULL;
 	for (uint32_t i = 0; i < _index_access_set.size(); i ++) {
@@ -204,7 +204,7 @@ MVCCManager::index_get_permission(access_t type, INDEX * index, uint64_t key, ui
 		}
 		else if (type == RD && access->rows->empty()) {
 		} else if (access->type == RD && type != RD) {
-			access->type = type; 
+			access->type = type;
 #if OCC_WAW_LOCK
 			// should get write permission.
 			uint64_t wts, rts;
@@ -230,13 +230,13 @@ MVCCManager::index_get_permission(access_t type, INDEX * index, uint64_t key, ui
 
 	Row_MVCC * manager = index->index_get_manager(key);
 	access->manager = manager;
-	if (type != RD && OCC_WAW_LOCK) { 
+	if (type != RD && OCC_WAW_LOCK) {
 		rc = manager->write(_txn, access->wts, access->rts, commit_ts, false);
-		if (rc == RCOK || rc == WAIT) 
+		if (rc == RCOK || rc == WAIT)
 			access->locked = true;
-		if (rc == WAIT) 
+		if (rc == WAIT)
 			ATOM_ADD_FETCH(_num_lock_waits, 1);
-	} else { 
+	} else {
 		rc = manager->read(_txn, NULL, access->wts, access->rts, commit_ts, false);
 		assert(rc == RCOK);
 		if (type == RD) {
@@ -247,7 +247,7 @@ MVCCManager::index_get_permission(access_t type, INDEX * index, uint64_t key, ui
 					advance(it, limit);
 					access->rows = new set<row_t *>( rows->begin(), it );
 					assert(access->rows->size() == limit);
-				} else 
+				} else
 					access->rows = new set<row_t *>( *rows );
 			}
 		}
@@ -268,7 +268,7 @@ MVCCManager::index_read(INDEX * index, uint64_t key, set<row_t *> * &rows, uint3
 	return RCOK;
 }
 
-RC	
+RC
 MVCCManager::index_insert(INDEX * index, uint64_t key)
 {
 	uint64_t tt = get_sys_clock();
@@ -288,14 +288,14 @@ MVCCManager::index_delete(INDEX * index, uint64_t key)
 	return rc;
 }
 
-char * 
+char *
 MVCCManager::get_data(uint64_t key, uint32_t table_id)
 {
-	for (vector<AccessMVCC>::iterator it = _access_set.begin(); it != _access_set.end(); it ++) 
+	for (vector<AccessMVCC>::iterator it = _access_set.begin(); it != _access_set.end(); it ++)
 		if (it->key == key && it->table_id == table_id)
 			return it->local_data;
-	
-	for (vector<AccessMVCC>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++) 
+
+	for (vector<AccessMVCC>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++)
 		if (it->key == key && it->table_id == table_id)
 			return it->local_data;
 
@@ -308,11 +308,11 @@ MVCCManager::get_row(row_t * row, access_t type, char * &data, uint64_t key)
 {
 	uint64_t tt = get_sys_clock();
 	RC rc = get_row(row, type, key);
-	if (rc == RCOK) 
+	if (rc == RCOK)
 		data = _last_access->local_data;
 	INC_FLOAT_STATS(row, get_sys_clock() - tt);
 	INC_FLOAT_STATS(time_debug4, get_sys_clock() - tt);
-	return rc;	
+	return rc;
 }
 
 void
@@ -321,26 +321,26 @@ MVCCManager::add_remote_req_header(UnstructuredBuffer * buffer)
 	buffer->put_front( &commit_ts ); // transfer commit_ts
 }
 
-uint32_t 
+uint32_t
 MVCCManager::process_remote_req_header(UnstructuredBuffer * buffer)
 {
 	buffer->get( &commit_ts);
 	return /*sizeof(_timestamp) + */ sizeof(commit_ts);
 }
 
-void 
+void
 MVCCManager::compute_commit_ts()
 { // pass
 }
 
 void
-MVCCManager::get_resp_data(uint32_t &size, char * &data) 
+MVCCManager::get_resp_data(uint32_t &size, char * &data)
 {
 	// construct the return message.
 	// Format:
 	//	| n | (key, table_id, wts, rts, tuple_size, data) * n
 	UnstructuredBuffer buffer;
-	uint32_t num_tuples = _access_set.size(); 
+	uint32_t num_tuples = _access_set.size();
 	buffer.put( &num_tuples );
 	for (auto access : _access_set) {
 		buffer.put( &access.key );
@@ -365,11 +365,11 @@ MVCCManager::find_access(uint64_t key, uint32_t table_id, vector<AccessMVCC> * s
 	return NULL;
 }
 
-void 
+void
 MVCCManager::process_remote_resp(uint32_t node_id, uint32_t size, char * resp_data)
 {
 	// return data format:
-	//		| n | (key, table_id, wts, rts, tuple_size, data) * n 
+	//		| n | (key, table_id, wts, rts, tuple_size, data) * n
 	// store the remote tuple to local access_set.
 	UnstructuredBuffer buffer(resp_data);
 	uint32_t num_tuples;
@@ -391,7 +391,7 @@ MVCCManager::process_remote_resp(uint32_t node_id, uint32_t size, char * resp_da
 			assert( access->wts == wts );
 			access->wts = wts;
 		} else {
-			char * data = NULL;  
+			char * data = NULL;
 			buffer.get( data, access->data_size );
 			access->local_data = new char [access->data_size];
 			memcpy(access->local_data, data, access->data_size);
@@ -401,8 +401,8 @@ MVCCManager::process_remote_resp(uint32_t node_id, uint32_t size, char * resp_da
 }
 
 // Lock the tuples in the write set.
-// if fails, should release all the locks.  
-RC 
+// if fails, should release all the locks.
+RC
 MVCCManager::lock_write_set()  // will not be called
 {
 	assert(!OCC_WAW_LOCK);
@@ -414,7 +414,7 @@ MVCCManager::lock_write_set()  // will not be called
 		if (access.type == RD || access.type == WR) continue;
 		rc = access.manager->try_lock(_txn);
 		if (rc == ABORT) return ABORT;
-		if (rc == WAIT) 
+		if (rc == WAIT)
 			ATOM_ADD_FETCH(_num_lock_waits, 1);
 		if (rc == WAIT || rc == RCOK) {
 			access.locked = true;
@@ -431,13 +431,13 @@ MVCCManager::lock_write_set()  // will not be called
 		rc = (*it)->row->manager->try_lock(_txn);
 		if (rc == WAIT || rc == RCOK)
 			(*it)->locked = true;
-		if (rc == WAIT) 
+		if (rc == WAIT)
 			ATOM_ADD_FETCH(_num_lock_waits, 1);
 		(*it)->rts = (*it)->row->manager->get_rts();
 		if ((*it)->wts != (*it)->row->manager->get_wts()) {
 			rc = ABORT;
 		}
-		
+
 		if (rc == ABORT)
 			return ABORT;
 	}
@@ -454,11 +454,11 @@ MVCCManager::lock_read_set()
 	return RCOK;
 }
 
-void 
+void
 MVCCManager::unlock_write_set(RC rc)
 {
-	for (vector<IndexAccessMVCC>::iterator it = _index_access_set.begin(); 
-		it != _index_access_set.end(); it ++ ) 
+	for (vector<IndexAccessMVCC>::iterator it = _index_access_set.begin();
+		it != _index_access_set.end(); it ++ )
 	{
 		if (it->locked) {
 			it->manager->release(_txn, rc);
@@ -466,11 +466,11 @@ MVCCManager::unlock_write_set(RC rc)
 		}
 	}
 	vector<AccessMVCC *>::iterator it;
-	for (it = _write_set.begin(); it != _write_set.end(); it ++) { 
+	for (it = _write_set.begin(); it != _write_set.end(); it ++) {
 		if ((*it)->locked) {
 			(*it)->row->manager->release(_txn, rc);
 			(*it)->locked = false;
-		} 
+		}
 	}
 }
 
@@ -485,43 +485,43 @@ MVCCManager::unlock_read_set()
 		}
 }
 
-RC 
+RC
 MVCCManager::validate_read_set(uint64_t commit_ts)
 {
 	return RCOK;
 }
 
-RC 
+RC
 MVCCManager::validate_write_set(uint64_t commit_ts)
 {
-	return RCOK; 
+	return RCOK;
 }
 
-void 
+void
 MVCCManager::split_read_write_set()
 {
 	_read_set.clear();
 	_write_set.clear();
 	for (vector<AccessMVCC>::iterator it = _access_set.begin();
-		 it != _access_set.end(); it ++) 
+		 it != _access_set.end(); it ++)
 	{
 		assert(it->row);
 		if (it->type == RD)
 			_read_set.push_back(&(*it));
 		else if ((it)->type == WR)
 			_write_set.push_back(&(*it));
-		else 
+		else
 			assert(false);
 	}
 }
 
-RC 
+RC
 MVCCManager::handle_pre_abort()
 {
 	return RCOK;  // we don't need pre-aborts
 }
 
-RC 
+RC
 MVCCManager::process_prepare_phase_coord()
 {
 	return RCOK;
@@ -537,40 +537,40 @@ MVCCManager::need_prepare_req(uint32_t remote_node_id, uint32_t &size, char * &d
 {
 	return true;
 }
-	
-RC 
+
+RC
 MVCCManager::process_prepare_req(uint32_t size, char * data, uint32_t &resp_size, char * &resp_data )
 {
 	if (is_read_only()) {
 		cleanup(COMMIT);
 		return COMMIT;
-	} else 
+	} else
 		return RCOK;
 }
 
-void 
+void
 MVCCManager::process_prepare_resp(RC rc, uint32_t node_id, char * data)
 {
 	assert(data == NULL);
 }
 
-void 
+void
 MVCCManager::process_commit_phase_coord(RC rc)
 {
 	if (rc == COMMIT) {
 		commit_insdel();
 		split_read_write_set();
 		for (vector<AccessMVCC *>::iterator it = _write_set.begin();
-			it != _write_set.end(); it ++) 
+			it != _write_set.end(); it ++)
 		{
 			(*it)->row->manager->write_data((*it)->local_data, commit_ts);
-			
+
 		}
 		if (!_txn->is_sub_txn() && commit_ts > glob_manager->get_max_cts())
 			glob_manager->set_max_cts(commit_ts);
 		// handle inserts and deletes
 		cleanup(COMMIT);
-	} else { 
+	} else {
 		abort();
 	}
 }
@@ -580,24 +580,24 @@ MVCCManager::commit_insdel() {
 	return RCOK;
 }
 
-bool 
+bool
 MVCCManager::need_commit_req(RC rc, uint32_t node_id, uint32_t &size, char * &data)
 {
 	uint32_t num_writes = 0;
-	for (vector<AccessMVCC>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++) 
+	for (vector<AccessMVCC>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++)
 		if ((it)->home_node_id == node_id && (it)->type == WR)
 			num_writes ++;
-	
+
 	if (rc == ABORT)
 		return true;
-	// COMMIT and the remote node is not readonly. 
+	// COMMIT and the remote node is not readonly.
 	// Format
 	//   | commit_ts | num_writes | (key, table_id, size, data) * num_writes
 	assert(rc == COMMIT);
 	UnstructuredBuffer buffer;
 	buffer.put( &commit_ts );  // seems we don't need to include commit_ts here since the remote server already knows it
 	buffer.put( &num_writes );
-	for (vector<AccessMVCC>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++) 
+	for (vector<AccessMVCC>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++)
 		if ((it)->home_node_id == node_id && (it)->type == WR) {
 			buffer.put( &(it)->key );
 			buffer.put( &(it)->table_id );
@@ -607,20 +607,20 @@ MVCCManager::need_commit_req(RC rc, uint32_t node_id, uint32_t &size, char * &da
 	size = buffer.size();
 	data = new char [size];
 	memcpy(data, buffer.data(), size);
-	return true;	
+	return true;
 }
 
-void 
+void
 MVCCManager::process_commit_req(RC rc, uint32_t size, char * data)
 {
-	if (rc == COMMIT) { 
+	if (rc == COMMIT) {
 		// Format
 		//   | commit_ts | num_writes | (key, table_id, size, data) * num_writes
 		UnstructuredBuffer buffer(data);
 		uint64_t commit_ts;
 		buffer.get( &commit_ts );
 		if (size > sizeof(uint64_t)) {
-			uint32_t num_writes; 
+			uint32_t num_writes;
 			buffer.get( &num_writes );
 			for (uint32_t i = 0; i < num_writes; i ++) {
 				uint64_t key;
@@ -635,30 +635,30 @@ MVCCManager::process_commit_req(RC rc, uint32_t size, char * data)
 				access->row->manager->write_data(tuple_data, commit_ts);
 			}
 		}
-		cleanup(COMMIT); 
+		cleanup(COMMIT);
 	} else
 		abort();
 }
 
-void 
+void
 MVCCManager::abort()
 {
 	cleanup(ABORT);
 }
 
-void 
+void
 MVCCManager::commit()
 {
 	cleanup(COMMIT);
 }
 
-bool 
-MVCCManager::is_txn_ready() 
-{ 
-	return _num_lock_waits == 0 || _signal_abort; 
+bool
+MVCCManager::is_txn_ready()
+{
+	return _num_lock_waits == 0 || _signal_abort;
 }
 
-void 
+void
 MVCCManager::set_txn_ready(RC rc)
 {
 	// this function can be called by multiple threads concurrently

@@ -1,4 +1,4 @@
-#include "global.h"	
+#include "global.h"
 #include "index_hash.h"
 #include "table.h"
 #include "row.h"
@@ -16,8 +16,8 @@ IndexHash::IndexHash(bool is_key_index)
 {
 }
 
-RC 
-IndexHash::init(table_t * table, uint64_t bucket_cnt) 
+RC
+IndexHash::init(table_t * table, uint64_t bucket_cnt)
 {
 	this->table = table;
 	_bucket_cnt = bucket_cnt;
@@ -27,7 +27,7 @@ IndexHash::init(table_t * table, uint64_t bucket_cnt)
 	return RCOK;
 }
 
-ROW_MAN * 
+ROW_MAN *
 IndexHash::index_get_manager(uint64_t key)
 {
 	Bucket * cur_bkt = &_buckets[ hash(key) ];
@@ -44,7 +44,7 @@ IndexHash::read(uint64_t key)
 RC IndexHash::insert(uint64_t key, row_t * row) {
 	uint64_t bkt_idx = hash(key);
 	Bucket * cur_bkt = &_buckets[bkt_idx];
-	
+
 	bool success = cur_bkt->insert(key, row);
 	return success? RCOK : ABORT;
 }
@@ -55,7 +55,7 @@ IndexHash::remove(row_t * row)
 	uint64_t index_key = row->get_index_key(this);
 	uint64_t bkt_idx = hash(index_key);
 	Bucket * cur_bkt = &_buckets[bkt_idx];
-	
+
 //	cur_bkt->latch();
 	cur_bkt->remove(index_key, row);
 //	cur_bkt->unlatch();
@@ -75,7 +75,7 @@ IndexHash::Bucket::~Bucket()
 	delete _manager;
 }
 
-void 
+void
 IndexHash::Bucket::init()
 {
 	_node_cnt = 0;
@@ -84,15 +84,15 @@ IndexHash::Bucket::init()
 	_manager = new ROW_MAN();
 }
 
-void 
+void
 IndexHash::Bucket::latch() {
-	
+
 	_manager->latch();
 }
 
-void 
+void
 IndexHash::Bucket::unlatch() {
-	_manager->unlatch(); 
+	_manager->unlatch();
 }
 
 ROW_MAN *
@@ -122,18 +122,18 @@ IndexHash::Bucket::find_node(uint64_t key)
 }
 
 bool
-IndexHash::Bucket::insert(uint64_t key, row_t * row) 
+IndexHash::Bucket::insert(uint64_t key, row_t * row)
 {
 	latch();
 	assert(row->get_table());
 	Node * node = find_node(key);
-	if (node == NULL) {	
+	if (node == NULL) {
 		node = new Node(key);
-		node->rows.insert(row); 
+		node->rows.insert(row);
 		node->next = _first_node;
 		_first_node = node;
 	} else {
-		// TODO. should diferentiate between unique vs. nonunique indexes.   
+		// TODO. should diferentiate between unique vs. nonunique indexes.
 		assert(WORKLOAD != YCSB);
 		node->rows.insert(row);
 	}
@@ -141,7 +141,7 @@ IndexHash::Bucket::insert(uint64_t key, row_t * row)
 	return true;
 }
 
-void 
+void
 IndexHash::Bucket::remove(uint64_t index_key, row_t * row)
 {
 	latch();
@@ -149,7 +149,7 @@ IndexHash::Bucket::remove(uint64_t index_key, row_t * row)
 	Node * prev_node = NULL;
 	while (cur_node != NULL && cur_node->key != index_key) {
 		prev_node = cur_node;
-		cur_node = cur_node->next; 
+		cur_node = cur_node->next;
 	}
 	assert(cur_node);
 	// if the node is found, delete it.
@@ -157,7 +157,7 @@ IndexHash::Bucket::remove(uint64_t index_key, row_t * row)
 	if (cur_node->rows.empty()) {
 		if (!prev_node)
 			_first_node = _first_node->next;
-		else 
+		else
 			prev_node->next = cur_node->next;
 		delete cur_node;
 	}
@@ -165,8 +165,8 @@ IndexHash::Bucket::remove(uint64_t index_key, row_t * row)
 }
 
 
-uint64_t 
-IndexHash::hash(uint64_t key) 
+uint64_t
+IndexHash::hash(uint64_t key)
 {
 	return (key ^ (key / _bucket_cnt)) % _bucket_cnt;
 }
@@ -174,7 +174,7 @@ IndexHash::hash(uint64_t key)
 ////////////////////////////////////////
 // Node
 ////////////////////////////////////////
-IndexHash::Node::Node(uint64_t key) 
+IndexHash::Node::Node(uint64_t key)
 {
 	this->key = key;
 	next = NULL;
@@ -183,8 +183,8 @@ IndexHash::Node::Node(uint64_t key)
 
 IndexHash::Node::~Node()
 {}
-		
-void 
+
+void
 IndexHash::Node::remove(row_t * row)
 {
 	M_ASSERT(rows.find(row) != rows.end(), "rows.size() = %ld. thd=%ld\n", rows.size(), GET_THD_ID);

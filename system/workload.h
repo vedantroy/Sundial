@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include "global.h"
 
@@ -23,17 +23,17 @@ public:
 	// tables indexed by table name
 	vector<table_t *> tables;
 	vector<INDEX *> indexes;
-	
+
 	// initialize the tables and indexes.
 	virtual RC 				init();
 	virtual RC 				init_schema(string schema_file);
-	
+
 	virtual StoreProcedure * create_store_procedure(TxnManager * txn, QueryBase * query) { assert(false) ; }
 
-	virtual QueryBase * 	gen_query() = 0; 
-	virtual QueryBase * 	clone_query(QueryBase * query) = 0; 
+	virtual QueryBase * 	gen_query() = 0;
+	virtual QueryBase * 	clone_query(QueryBase * query) = 0;
 	virtual QueryBase * 	deserialize_subquery(char * data) = 0;
-	
+
 	virtual uint64_t 		get_primary_key(row_t * row) = 0;
 	virtual uint64_t		get_index_key(row_t * row, uint32_t index_id) = 0;
 	virtual INDEX * 		get_index() { return NULL; }

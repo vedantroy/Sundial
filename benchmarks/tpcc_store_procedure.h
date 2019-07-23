@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include "store_procedure.h"
 class itemid_t;
@@ -10,18 +10,18 @@ public:
 	~TPCCStoreProcedure();
 
 	RC 		execute();
-	RC 		process_remote_req(uint32_t size, char * data, uint32_t &resp_size, char * &resp_data); 
-	
+	RC 		process_remote_req(uint32_t size, char * data, uint32_t &resp_size, char * &resp_data);
+
 	void 	txn_abort();
 private:
 	void init();
 
 	RC execute_payment();
 	RC execute_new_order();
-	RC execute_order_status(); 
+	RC execute_order_status();
 	RC execute_delivery();
 	RC execute_stock_level();
-	
+
 	uint32_t 	 	get_txn_type();
 
 	// Need to maintain some states so a txn can be pended and restarted.

@@ -1,14 +1,14 @@
-#pragma once 
+#pragma once
 
-#define DISTRIBUTED_ENABLE			true   
+#define DISTRIBUTED_ENABLE			true
 // number of server threads
-#define NUM_SERVER_THREADS			8 
+#define NUM_SERVER_THREADS			8
 
 ////////////////////////////////////////////////////////////////////////
-// For distributed DBMS, the following parameters are for a single node.  
+// For distributed DBMS, the following parameters are for a single node.
 ////////////////////////////////////////////////////////////////////////
-// CPU_FREQ is used to get accurate timing info 
-#define CPU_FREQ 					2.6 	// in GHz/s
+// CPU_FREQ is used to get accurate timing info
+#define CPU_FREQ 					1.99	// in GHz/s
 
 // warmup time
 #define WARMUP						0
@@ -19,7 +19,7 @@
 #define COLLECT_LATENCY 			true
 #define PRT_LAT_DISTR				false
 #define STATS_ENABLE				true
-#define TIME_ENABLE					true 
+#define TIME_ENABLE					true
 
 // Stats
 #define STATS_CP_INTERVAL			1000 // in ms
@@ -36,7 +36,7 @@
 // per-row lock/ts management or central lock/ts management
 #define BUCKET_CNT					31
 #define MAX_NUM_ABORTS				0
-#define ABORT_PENALTY 				1000000 
+#define ABORT_PENALTY 				1000000
 #define ABORT_BUFFER_SIZE			10
 #define ABORT_BUFFER_ENABLE			true
 // [ INDEX ]
@@ -46,7 +46,7 @@
 #define INDEX_STRUCT				IDX_HASH
 #define BTREE_ORDER 				16
 
-// [Two Phase Locking] 
+// [Two Phase Locking]
 #define NO_LOCK						false // NO_LOCK=true : used to model H-Store
 // [TIMESTAMP]
 #define TS_ALLOC					TS_CLOCK
@@ -63,10 +63,10 @@
 #define WR_VALIDATION_SEPARATE		true
 #define WRITE_PERMISSION_LOCK		false
 #define ATOMIC_TIMESTAMP			"false"
-// when WAW_LOCK is true, lock a tuple before write. 
-// essentially, WW conflicts are handled as 2PL.  
+// when WAW_LOCK is true, lock a tuple before write.
+// essentially, WW conflicts are handled as 2PL.
 #define OCC_WAW_LOCK				true
-// if SKIP_READONLY_PREPARE is true, then a readonly subtxn will forget 
+// if SKIP_READONLY_PREPARE is true, then a readonly subtxn will forget
 // about its states after returning. If no renewal is required, this remote
 // node will not participate in the 2PC protocol.
 #define SKIP_READONLY_PREPARE		false
@@ -77,7 +77,7 @@
 #define ENABLE_LOCAL_CACHING 		false
 #define CACHING_POLICY				ALWAYS_CHECK
 #define RO_LEASE					false
-#define LOCAL_CACHE_SIZE			(1024*1024) // in KB 
+#define LOCAL_CACHE_SIZE			(1024*1024) // in KB
 #define REUSE_FRESH_DATA			false
 #define REUSE_IF_NO_REMOTE 			false
 
@@ -95,9 +95,9 @@
 #define DEBUG_REFCOUNT				false
 // [HSTORE]
 // when set to true, hstore will not access the global timestamp.
-// This is fine for single partition transactions. 
+// This is fine for single partition transactions.
 #define HSTORE_LOCAL_TS				false
-// [VLL] 
+// [VLL]
 #define TXN_QUEUE_SIZE_LIMIT		THREAD_CNT
 
 ////////////////////////////////////////////////////////////////////////
@@ -125,10 +125,10 @@
 #define READ_PERC 					0.9
 #define PERC_READONLY_DATA			0
 #define PERC_REMOTE					0.1
-#define SINGLE_PART_ONLY			false // access single partition only 
+#define SINGLE_PART_ONLY			false // access single partition only
 #define REQ_PER_QUERY				16
 #define THINK_TIME					0  // in us
-#define SOCIAL_NETWORK				false 
+#define SOCIAL_NETWORK				false
 ///////////////////////////////
 // TPCC
 ///////////////////////////////
@@ -155,15 +155,15 @@
 ///////////////////////////////
 // TATP
 ///////////////////////////////
-// Number of subscribers per node.  
+// Number of subscribers per node.
 #define TATP_POPULATION				100000
 
 ////////////////////////////////////////////////////////////////////////
-// TODO centralized CC management. 
+// TODO centralized CC management.
 ////////////////////////////////////////////////////////////////////////
-#define MAX_LOCK_CNT				(20 * THREAD_CNT) 
+#define MAX_LOCK_CNT				(20 * THREAD_CNT)
 #define TSTAB_SIZE                  50 * THREAD_CNT
-#define TSTAB_FREE                  TSTAB_SIZE 
+#define TSTAB_FREE                  TSTAB_SIZE
 #define TSREQ_FREE                  4 * TSTAB_FREE
 #define MVHIS_FREE                  4 * TSTAB_FREE
 #define SPIN                        false
@@ -189,7 +189,7 @@ extern TestCases					g_test_case;
 #define DEBUG_TIMESTAMP				false
 #define DEBUG_SYNTH					false
 #define DEBUG_ASSERT				false
-#define DEBUG_CC					false 
+#define DEBUG_CC					false
 
 ////////////////////////////////////////////////////////////////////////
 // Constant
@@ -209,7 +209,7 @@ extern TestCases					g_test_case;
 #define NAIVE_TICTOC				6
 #define TICTOC						7
 #define TCM							8
-//Isolation Levels 
+//Isolation Levels
 #define SERIALIZABLE				1
 #define SNAPSHOT					2
 #define REPEATABLE_READ				3
@@ -224,10 +224,10 @@ extern TestCases					g_test_case;
 // Caching policy
 #define ALWAYS_READ					1	// always read cached data
 #define ALWAYS_CHECK				2	// always contact remote node
-#define READ_INTENSIVE				3	// only read cached data that is read-intensive 
+#define READ_INTENSIVE				3	// only read cached data that is read-intensive
 
 /***********************************************/
-// Distributed DBMS  
+// Distributed DBMS
 /***********************************************/
 #define START_PORT					35777
 #define INOUT_QUEUE_SIZE			1024
@@ -240,4 +240,4 @@ extern TestCases					g_test_case;
 #define SEND_BUFFER_SIZE 			32768
 #define MODEL_DUMMY_MSG				false
 
-#define MAX_CLOCK_SKEW				0 // in us 
+#define MAX_CLOCK_SKEW				0 // in us

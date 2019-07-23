@@ -10,7 +10,7 @@
 
 TxnTable::TxnTable()
 {
-	_txn_table_size = g_num_server_nodes * g_num_server_threads; 
+	_txn_table_size = g_num_server_nodes * g_num_server_threads;
 	_buckets = new Bucket * [_txn_table_size];
 	for (uint32_t i = 0; i < _txn_table_size; i++) {
 		_buckets[i] = (Bucket *) _mm_malloc(sizeof(Bucket), 64);
@@ -19,12 +19,12 @@ TxnTable::TxnTable()
 	}
 }
 
-void 
+void
 TxnTable::add_txn(TxnManager * txn)
 {
 	assert(get_txn(txn->get_txn_id()) == NULL);
 
-#if CC_ALG == MAAT && DEBUG_REFCOUNT 
+#if CC_ALG == MAAT && DEBUG_REFCOUNT
 	ATOM_COUT("Adding txn " << txn->get_txn_id() << " with refcount =" << ((MaaTManager*)(txn->get_cc_manager()))->_refcount << endl);
 #endif
 
@@ -32,7 +32,7 @@ TxnTable::add_txn(TxnManager * txn)
 	Node * node = (Node *) _mm_malloc(sizeof(Node), 64);
 
 	node->txn = txn;
-  	while ( !ATOM_CAS(_buckets[bucket_id]->latch, false, true) ) 
+  	while ( !ATOM_CAS(_buckets[bucket_id]->latch, false, true) )
 		PAUSE
 	COMPILER_BARRIER
 #if DEBUG_TXN_TABLE
@@ -64,12 +64,12 @@ TxnTable::add_txn(TxnManager * txn)
 	_buckets[bucket_id]->latch = false;
 }
 
-TxnManager * 
+TxnManager *
 TxnTable::get_txn(uint64_t txn_id)
 {
 	uint32_t bucket_id = txn_id % _txn_table_size;
 	Node * node;
-  	while ( !ATOM_CAS(_buckets[bucket_id]->latch, false, true) ) 
+  	while ( !ATOM_CAS(_buckets[bucket_id]->latch, false, true) )
 		PAUSE
 	node = _buckets[bucket_id]->first;
 	while (node && node->txn->get_txn_id() != txn_id) {
@@ -78,13 +78,13 @@ TxnTable::get_txn(uint64_t txn_id)
 #if DEBUG_TXN_TABLE
 	if (node)
 		printf("get_txn ID=%ld. txn=%ld\n", txn_id, (uint64_t)node->txn);
-	else 
+	else
 		printf("get_txn ID=%ld. txn=NULL\n", txn_id);
 #endif
 	_buckets[bucket_id]->latch = false;
 	if (node)
 		return node->txn;
-	else 
+	else
 		return NULL;
 }
 
@@ -127,7 +127,7 @@ TxnTable::print_txn()
 				// Usually memory access error. We just do nothing.
 			}
 			sprintf(buffer, "\n");
-#endif			
+#endif
 			node = node->next;
 		}
 	}
@@ -141,7 +141,7 @@ TxnTable::remove_txn(uint64_t txn_id)
 	uint32_t bucket_id = txn_id % _txn_table_size;
 	Node * node;
 	Node * rm_node;
-  	while ( !ATOM_CAS(_buckets[bucket_id]->latch, false, true) ) 
+  	while ( !ATOM_CAS(_buckets[bucket_id]->latch, false, true) )
 		PAUSE
 	COMPILER_BARRIER
 #if DEBUG_TXN_TABLE || DEBUG_REFCOUNT
@@ -171,7 +171,7 @@ TxnTable::remove_txn(TxnManager * txn)
 	uint32_t bucket_id = txn->get_txn_id() % _txn_table_size;
 	Node * node;
 	Node * rm_node;
-  	while ( !ATOM_CAS(_buckets[bucket_id]->latch, false, true) ) 
+  	while ( !ATOM_CAS(_buckets[bucket_id]->latch, false, true) )
 		PAUSE
 #if DEBUG_TXN_TABLE || DEBUG_REFCOUNT
 	printf("remove_txn ID=%ld\n", txn->get_txn_id());
@@ -195,21 +195,21 @@ TxnTable::remove_txn(TxnManager * txn)
 }
 
 
-uint32_t 
+uint32_t
 TxnTable::get_size()
 {
 	uint32_t size = 0;
 	for (uint32_t i = 0; i < _txn_table_size; i++)
 	{
-  		while ( !ATOM_CAS(_buckets[i]->latch, false, true) ) 
+  		while ( !ATOM_CAS(_buckets[i]->latch, false, true) )
 			PAUSE
 		COMPILER_BARRIER
-  
+
 		Node * node = _buckets[i]->first;
  		while (node) {
 			size ++;
 			cout << i << ":" << node->txn->get_txn_id() << endl;
-			node = node->next;  
+			node = node->next;
 		}
 
 		COMPILER_BARRIER

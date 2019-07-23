@@ -5,7 +5,7 @@
 
 #if CC_ALG==F_ONE
 
-RC 
+RC
 Row_f1::read(TxnManager * txn, char * data, uint64_t &wts, bool latch)
 {
 	if (latch)
@@ -15,10 +15,10 @@ Row_f1::read(TxnManager * txn, char * data, uint64_t &wts, bool latch)
 		memcpy(data, _row->get_data(), _row->get_tuple_size());
 	if (latch)
 		pthread_mutex_unlock( &_latch );
-	return RCOK; 
+	return RCOK;
 }
 
-void 
+void
 Row_f1::write_data(char * data, ts_t wts)
 {
 	_wts = wts;

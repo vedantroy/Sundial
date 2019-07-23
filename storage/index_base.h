@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include "global.h"
 
@@ -13,8 +13,8 @@ public:
 		next = NULL;
     };
 	~itemid_t();
-	
-	row_t * row; 
+
+	row_t * row;
 	itemid_t * next;
 	bool valid;
 	void init();

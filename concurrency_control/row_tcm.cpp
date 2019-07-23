@@ -33,8 +33,8 @@ Row_TCM::unlatch()
 	pthread_mutex_unlock( &_latch );
 }
 
-void 
-Row_TCM::init(row_t * row) 
+void
+Row_TCM::init(row_t * row)
 {
 	_row = row;
 	pthread_mutex_init(&_latch, NULL);
@@ -42,8 +42,8 @@ Row_TCM::init(row_t * row)
   	_max_num_waits = g_max_num_waits;
 }
 
-RC 
-Row_TCM::lock_get(LockType type, TxnManager * txn, char * data) 
+RC
+Row_TCM::lock_get(LockType type, TxnManager * txn, char * data)
 {
 	RC rc = RCOK;
 	latch();
@@ -57,19 +57,19 @@ Row_TCM::lock_get(LockType type, TxnManager * txn, char * data)
 			_locking_set.erase(it);
 			continue;
 		}
-	
+
 		bool both_latched = false;
 		while (!both_latched) {
 			if (requester->try_latch()) {
 				if (holder->try_latch()) { both_latched = true; }
-				else requester->unlatch(); 
+				else requester->unlatch();
 			}
 		}
 		if (it->type == LOCK_SH && type == LOCK_EX)
 			rc = adjust_timestamps_rw(holder, requester);
-		else if (it->type == LOCK_EX && type == LOCK_SH)  
+		else if (it->type == LOCK_EX && type == LOCK_SH)
 			rc = adjust_timestamps_wr(holder, requester);
-		else if (it->type == LOCK_EX && type == LOCK_EX)  
+		else if (it->type == LOCK_EX && type == LOCK_EX)
 			rc = adjust_timestamps_ww(holder, requester);
 		requester->unlatch();
 		holder->unlatch();
@@ -79,8 +79,8 @@ Row_TCM::lock_get(LockType type, TxnManager * txn, char * data)
 	}
 	// The request didn't abort, add it to the locking_set
 	_locking_set.insert( LockHolder{ (TCMManager *)txn->get_cc_manager(), type } );
-	// TODO. Right now, we do not model multiple data versions here 
-	// but instead just read the current data. 
+	// TODO. Right now, we do not model multiple data versions here
+	// but instead just read the current data.
 	// For YCSB, this is OK.
 	memcpy(data, _row->get_data(), _row->get_tuple_size());
 finish:
@@ -90,12 +90,12 @@ finish:
 
 
 RC
-Row_TCM::lock_release(TxnManager * txn, RC rc) 
+Row_TCM::lock_release(TxnManager * txn, RC rc)
 {
 	latch();
 	bool released = false;
 	for (std::set<LockHolder>::iterator it = _locking_set.begin();
-		 it != _locking_set.end(); it ++) 
+		 it != _locking_set.end(); it ++)
 	{
 		if (it->manager == txn->get_cc_manager()) {
 			_locking_set.erase( it );
@@ -105,53 +105,53 @@ Row_TCM::lock_release(TxnManager * txn, RC rc)
 	}
 	assert(released);
 	unlatch();
-	return RCOK; 
+	return RCOK;
 }
 
 
-RC 
+RC
 Row_TCM::adjust_timestamps_rw(TCMManager * holder, TCMManager * requester)
 {
 	RC rc = RCOK;
 	if (!requester->end && !holder->end) {
 		uint64_t new_time = glob_manager->get_current_time();
-		holder->late = new_time;	
+		holder->late = new_time;
 		holder->end = true;
 		requester->early = new_time;
 	} else if (!requester->end && holder->end) {
 		if (holder->late > requester->early)
-			requester->early = holder->late;		
+			requester->early = holder->late;
 	} else if (requester->end && !holder->end) {
 		if (requester->late > holder->early) {
 			requester->early = requester->late - 1;
 			holder->late = requester->late - 1;
-			holder->end = true; 
+			holder->end = true;
 		} else {
 			rc = ABORT;
 		}
 	} else {
-		if (requester->early > holder->late) 
+		if (requester->early > holder->late)
 		{}
-		else if (requester->early <= holder->late 
-				 && holder->late <= requester->late) 
+		else if (requester->early <= holder->late
+				 && holder->late <= requester->late)
 		{
 			requester->early = holder->late;
 		} else if (holder->early <= requester->late
-				   && requester->late <= holder->late) 
+				   && requester->late <= holder->late)
 		{
 			if (holder->state == TxnManager::RUNNING) {
 				uint64_t new_time = requester->late - 1;
 				holder->late = new_time;
 				requester->early = new_time;
 			}
-		} else 
+		} else
 			rc = ABORT;
 	}
 	return rc;
 }
 
-RC 
-Row_TCM::adjust_timestamps_wr(TCMManager * holder, TCMManager * requester) 
+RC
+Row_TCM::adjust_timestamps_wr(TCMManager * holder, TCMManager * requester)
 {
 	if (!requester->end && !holder->end) {
 		uint64_t new_time = glob_manager->get_current_time();
@@ -174,7 +174,7 @@ Row_TCM::adjust_timestamps_wr(TCMManager * holder, TCMManager * requester)
 	} else {
 		if (requester->early < holder->late) {
 			if (holder->state == TxnManager::RUNNING)
-				holder->try_abort();				
+				holder->try_abort();
 		} else if (requester->early <= holder->late && holder->late <= requester->late) {
 			uint64_t new_time = holder->late - 1;
 			requester->late = new_time;
@@ -185,7 +185,7 @@ Row_TCM::adjust_timestamps_wr(TCMManager * holder, TCMManager * requester)
 	return RCOK;
 }
 
-RC 
+RC
 Row_TCM::adjust_timestamps_ww(TCMManager * holder, TCMManager * requester)
 {
 	RC rc = RCOK;
@@ -208,7 +208,7 @@ Row_TCM::adjust_timestamps_ww(TCMManager * holder, TCMManager * requester)
 			holder->end = true;
 			requester->early = new_time;
 			rc = ABORT;
-		} else 
+		} else
 			rc = ABORT;
 	} else {
 		if (requester->early > holder->late)
@@ -220,7 +220,7 @@ Row_TCM::adjust_timestamps_ww(TCMManager * holder, TCMManager * requester)
 			requester->early = requester->late - 1;
 			holder->late = requester->late - 1;
 			rc = ABORT;
-		} else 
+		} else
 		 	rc = ABORT;
 	}
 	return rc;

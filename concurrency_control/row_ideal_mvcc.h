@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include "global.h"
 
@@ -13,7 +13,7 @@
 #define WTS_MASK ((1UL << WTS_LEN) - 1)
 #define RTS_MASK (((1UL << RTS_LEN) - 1) << WTS_LEN)
 
-#else 
+#else
 
 #define LOCK_BIT (1UL << 63)
 
@@ -30,8 +30,8 @@ public:
 	Row_MVCC(row_t * row) : Row_MVCC()
 	{ _row = row; }
 
-	RC 					read(TxnManager * txn, char * data, 
-							 uint64_t &wts, uint64_t &rts, uint64_t &cts, bool latch = true); 
+	RC 					read(TxnManager * txn, char * data,
+							 uint64_t &wts, uint64_t &rts, uint64_t &cts, bool latch = true);
 	RC					write(TxnManager * txn, uint64_t &wts, uint64_t &rts, uint64_t &cts, bool latch = true);
 	RC 					update(char * data, uint64_t wts, uint64_t rts);
 
@@ -44,7 +44,7 @@ public:
 	void 				release(TxnManager * txn, RC rc);
 
 #if SPECULATE
-	RC					write_speculate(row_t * data, ts_t version, bool spec_read); 
+	RC					write_speculate(row_t * data, ts_t version, bool spec_read);
 #endif
 	void				write_data(char * data, ts_t wts);
 	void 				update_ts(uint64_t cts);
@@ -56,17 +56,17 @@ public:
 	uint64_t 			get_wts();
 	uint64_t 			get_rts();
 	void 				get_ts(uint64_t &wts, uint64_t &rts);
-	void				set_ts(uint64_t wts, uint64_t rts); 
+	void				set_ts(uint64_t wts, uint64_t rts);
 #if OCC_LOCK_TYPE == WAIT_DIE || OCC_WAW_LOCK
-  	TxnManager *		_lock_owner; 
+  	TxnManager *		_lock_owner;
 	#define MAN(txn) ((MVCCManager *) (txn)->get_cc_manager())
 	struct CompareWait {
 		bool operator() (TxnManager * en1, TxnManager * en2) const;
 	};
-	std::set<TxnManager *, CompareWait> _waiting_set; 
+	std::set<TxnManager *, CompareWait> _waiting_set;
 	uint32_t _max_num_waits;
 #endif
-	
+
 	bool 				is_deleted() { return _deleted; }
 	void 				delete_row(uint64_t del_ts);
 	enum State {
@@ -82,7 +82,7 @@ public:
 	uint64_t			_rts; // end lease timestamp
 	uint64_t	   		_pending_cts;
 
-	// TODO _wr_latch can be removed using the atomic word trick. 
+	// TODO _wr_latch can be removed using the atomic word trick.
 	pthread_mutex_t * 	_latch;   	 // to guarantee read/write consistency
 	bool 				_blatch;   	 // to guarantee read/write consistency
 	bool				_ts_lock;	 // wts/rts cannot be changed if _ts_lock is true.

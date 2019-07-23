@@ -1,15 +1,15 @@
-#pragma once 
+#pragma once
 
 #include "cc_manager.h"
 
 #if CC_ALG == F_ONE
 
-class F1Manager : public CCManager 
+class F1Manager : public CCManager
 {
 public:
 	F1Manager(TxnManager * txn);
 	~F1Manager() {};
-	
+
 	RC 			get_row(row_t * row, access_t type, uint64_t key);
 	RC 			get_row(row_t * row, access_t type, char * &data, uint64_t key);
 	char * 		get_data( uint64_t key, uint32_t table_id);
@@ -35,15 +35,15 @@ public:
 	void 		process_remote_resp(uint32_t node_id, uint32_t size, char * resp_data);
 
 	// prepare phase
-	RC 			process_prepare_phase_coord(); 
+	RC 			process_prepare_phase_coord();
 	bool 		need_prepare_req(uint32_t remote_node_id, uint32_t &size, char * &data);
 	RC 			process_prepare_req(uint32_t size, char * data, uint32_t &resp_size, char * &resp_data );
-	
+
 	// commit phase
 	void 		process_commit_phase_coord(RC rc);
-	RC			commit_insdel(); 
+	RC			commit_insdel();
 	bool 		need_commit_req(RC rc, uint32_t node_id, uint32_t &size, char * &data);
-	void 		process_commit_req(RC rc, uint32_t size, char * data); 
+	void 		process_commit_req(RC rc, uint32_t size, char * data);
 	void 		abort();
 private:
 	struct IndexAccessF1 : IndexAccess {
@@ -67,7 +67,7 @@ private:
 	RC 				validate_local_txn();
 
 	static bool 	_pre_abort;
-	
+
 	bool 			_signal_abort;
 };
 

@@ -1,0 +1,9 @@
+# Object files
+*.o
+# Build Artifacts
+*.d
+# Generated executable
+rundb
+# Configuration Files
+ifconfigtxt
+

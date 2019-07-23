@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include "workload.h"
 #include "txn.h"
@@ -15,16 +15,16 @@ public:
 	RC init_schema(const char * schema_file);
 	TxnManager * 	get_txn_man();
 	QueryBase * 	gen_query();
-	QueryBase * 	clone_query(QueryBase * query); 
+	QueryBase * 	clone_query(QueryBase * query);
 	StoreProcedure * create_store_procedure(TxnManager * txn, QueryBase * query);
-	QueryBase * 	deserialize_subquery(char * data); 
-	
+	QueryBase * 	deserialize_subquery(char * data);
+
 	uint32_t	 	key_to_node(uint64_t key, uint32_t table_id = 0);
 	uint32_t		index_to_table(uint32_t index_id);
 	void 			table_to_indexes(uint32_t table_id, set<INDEX *> * indexes);
 
 	uint64_t 		get_primary_key(row_t * row);
-	
+
 	uint64_t 		get_index_key(row_t * row, uint32_t index_id);
 	table_t * 		get_table(uint32_t table_id) { return tables[table_id]; }
 	INDEX * 		get_index(uint32_t index_id) { return indexes[index_id]; }
@@ -50,7 +50,7 @@ public:
 	INDEX *		i_order_cust;
 	INDEX * 	i_orderline; // key = (w_id, d_id, o_id)
 	INDEX * 	i_neworder;
-	
+
 	bool ** delivering;
 	uint32_t next_tid;
 private:
@@ -62,7 +62,7 @@ private:
 	void init_tab_cust(uint64_t d_id, uint64_t w_id);
 	void init_tab_hist(uint64_t c_id, uint64_t d_id, uint64_t w_id);
 	void init_tab_order(uint64_t d_id, uint64_t w_id);
-	
+
 	void init_permutation(uint64_t * perm_c_id, uint64_t wid);
 
 /*	static void * threadInitItem(void * This);

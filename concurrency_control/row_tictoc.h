@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include "global.h"
 
@@ -13,7 +13,7 @@
 #define WTS_MASK ((1UL << WTS_LEN) - 1)
 #define RTS_MASK (((1UL << RTS_LEN) - 1) << WTS_LEN)
 
-#else 
+#else
 
 #define LOCK_BIT (1UL << 63)
 
@@ -30,10 +30,10 @@ public:
 	static int          _history_num;
 #endif
 	Row_tictoc() : Row_tictoc(NULL) {};
-	Row_tictoc(row_t * row); 
+	Row_tictoc(row_t * row);
 
-	RC 					read(TxnManager * txn, char * data, 
-							 uint64_t &wts, uint64_t &rts, bool latch = true, bool remote = false); 
+	RC 					read(TxnManager * txn, char * data,
+							 uint64_t &wts, uint64_t &rts, bool latch = true, bool remote = false);
 	RC					write(TxnManager * txn, uint64_t &wts, uint64_t &rts, bool latch = true);
 	RC 					update(char * data, uint64_t wts, uint64_t rts);
 	void 				update_rts(uint64_t rts);
@@ -47,7 +47,7 @@ public:
 	void 				release(TxnManager * txn, RC rc);
 
 #if SPECULATE
-	RC					write_speculate(row_t * data, ts_t version, bool spec_read); 
+	RC					write_speculate(row_t * data, ts_t version, bool spec_read);
 #endif
 	void				write_data(char * data, ts_t wts);
 	void 				update_ts(uint64_t cts);
@@ -67,18 +67,18 @@ public:
 	uint64_t 			get_wts();
 	uint64_t 			get_rts();
 	void 				get_ts(uint64_t &wts, uint64_t &rts);
-	void				set_ts(uint64_t wts, uint64_t rts); 
-  	
+	void				set_ts(uint64_t wts, uint64_t rts);
+
   #if OCC_LOCK_TYPE == WAIT_DIE || OCC_WAW_LOCK
-	TxnManager *		_lock_owner; 
+	TxnManager *		_lock_owner;
 	#define MAN(txn) ((TicTocManager *) (txn)->get_cc_manager())
 	struct CompareWait {
 		bool operator() (TxnManager * en1, TxnManager * en2) const;
 	};
-	std::set<TxnManager *, CompareWait> _waiting_set; 
+	std::set<TxnManager *, CompareWait> _waiting_set;
 	uint32_t _max_num_waits;
   #endif
-  
+
 #if ENABLE_LOCAL_CACHING
 	bool 				is_read_intensive() { return _write_intensity == 0; }
 #endif
@@ -94,13 +94,13 @@ public:
 	row_t * 			_row;
 #if ATOMIC_WORD
 	//volatile uint64_t	_ts_word;
-	// the first bit in _wts is the write_latch bit, indicating that the tuple is being written to. 
-	volatile uint64_t	_wts; // last write timestamp. 
+	// the first bit in _wts is the write_latch bit, indicating that the tuple is being written to.
+	volatile uint64_t	_wts; // last write timestamp.
 	volatile uint64_t	_rts; // end lease timestamp
 	volatile bool 		_write_latch;
 	// when locked, only the owner can change wts/rts.
-	// however, the tuple can still be read by other txns. 
-	volatile bool		_ex_lock;	
+	// however, the tuple can still be read by other txns.
+	volatile bool		_ex_lock;
 #else
 	uint64_t			_wts; // last write timestamp
 	uint64_t			_rts; // end lease timestamp

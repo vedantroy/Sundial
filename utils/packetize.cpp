@@ -1,6 +1,6 @@
 #include "packetize.h"
 
-void 
+void
 UnstructuredBuffer::put(char * data, uint32_t size)
 {
 	if (_buf) {
@@ -11,7 +11,7 @@ UnstructuredBuffer::put(char * data, uint32_t size)
 	}
 }
 
-void 
+void
 UnstructuredBuffer::get(char * &data, uint32_t size)
 {
 	assert(_buf);
@@ -20,9 +20,9 @@ UnstructuredBuffer::get(char * &data, uint32_t size)
 }
 
 
-uint32_t 
+uint32_t
 UnstructuredBuffer::size()
-{ 
-	return _buf? _pos : _chars.size(); 
+{
+	return _buf? _pos : _chars.size();
 }
 

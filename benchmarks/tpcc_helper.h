@@ -18,7 +18,7 @@ uint64_t custNPKey(char * c_last, uint64_t c_d_id, uint64_t c_w_id);
 
 uint64_t Lastname(uint64_t num, char* name);
 // return random data from [0, max-1]
-uint64_t RAND(uint64_t max); 
+uint64_t RAND(uint64_t max);
 // random number from [x, y]
 uint64_t URand(uint64_t x, uint64_t y);
 // non-uniform random number

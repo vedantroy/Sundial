@@ -8,7 +8,7 @@ Stats_thd::Stats_thd()
 {
 	_float_stats = (double *) _mm_malloc(sizeof(double) * NUM_FLOAT_STATS, 64);
 	_int_stats = (uint64_t *) _mm_malloc(sizeof(uint64_t) * NUM_INT_STATS, 64);
-	
+
 	_msg_count = (uint64_t *) _mm_malloc(sizeof(uint64_t) * Message::NUM_MSG_TYPES, 64);
 	_msg_size = (uint64_t *) _mm_malloc(sizeof(uint64_t) * Message::NUM_MSG_TYPES, 64);
 	_msg_committed_count = (uint64_t *) _mm_malloc(sizeof(uint64_t) * Message::NUM_MSG_TYPES, 64);
@@ -26,7 +26,7 @@ void Stats_thd::clear() {
 		_float_stats[i] = 0;
 	for (uint32_t i = 0; i < NUM_INT_STATS; i++)
 		_int_stats[i] = 0;
-	
+
 	memset(_msg_count, 0, sizeof(uint64_t) * Message::NUM_MSG_TYPES);
 	memset(_msg_size, 0, sizeof(uint64_t) * Message::NUM_MSG_TYPES);
 	memset(_msg_committed_count, 0, sizeof(uint64_t) * Message::NUM_MSG_TYPES);
@@ -39,7 +39,7 @@ void Stats_thd::clear() {
 #endif
 }
 
-void 
+void
 Stats_thd::copy_from(Stats_thd * stats_thd)
 {
 	memcpy(_float_stats, stats_thd->_float_stats, sizeof(double) * NUM_FLOAT_STATS);
@@ -64,15 +64,15 @@ Stats::Stats()
 }
 
 void Stats::init() {
-	if (!STATS_ENABLE) 
+	if (!STATS_ENABLE)
 		return;
 	_stats = (Stats_thd**) _mm_malloc(sizeof(Stats_thd*) * g_total_num_threads, 64);
 }
 
 void Stats::init(uint64_t thread_id) {
-	if (!STATS_ENABLE) 
+	if (!STATS_ENABLE)
 		return;
-	_stats[thread_id] = (Stats_thd *) 
+	_stats[thread_id] = (Stats_thd *)
 		_mm_malloc(sizeof(Stats_thd), 64);
 
 	_stats[thread_id]->init(thread_id);
@@ -89,7 +89,7 @@ void Stats::clear(uint64_t tid) {
 	}
 }
 
-void Stats::output(std::ostream * os) 
+void Stats::output(std::ostream * os)
 {
 	std::ostream &out = *os;
 
@@ -98,11 +98,11 @@ void Stats::output(std::ostream * os)
 		uint32_t cp = int(1000 * g_warmup_time / STATS_CP_INTERVAL) - 1;
 		Stats * base = _checkpoints[cp];
 		for (uint32_t i = 0; i < g_total_num_threads; i++) {
-			for	(uint32_t n = 0; n < NUM_FLOAT_STATS; n++) 
+			for	(uint32_t n = 0; n < NUM_FLOAT_STATS; n++)
 				_stats[i]->_float_stats[n] -= base->_stats[i]->_float_stats[n];
 			if (i < g_num_worker_threads)
 				_stats[i]->_float_stats[STAT_run_time] = g_run_time * BILLION;
-			for	(uint32_t n = 0; n < NUM_INT_STATS; n++) 
+			for	(uint32_t n = 0; n < NUM_INT_STATS; n++)
 				_stats[i]->_int_stats[n] -= base->_stats[i]->_int_stats[n];
 
 			for (uint32_t n = 0; n < Message::NUM_MSG_TYPES; n++) {
@@ -116,11 +116,11 @@ void Stats::output(std::ostream * os)
 
 	uint64_t total_num_commits = 0;
 	double total_run_time = 0;
-	for (uint32_t tid = 0; tid < g_total_num_threads; tid ++) { 
+	for (uint32_t tid = 0; tid < g_total_num_threads; tid ++) {
 		total_num_commits += _stats[tid]->_int_stats[STAT_num_commits];
 		total_run_time += _stats[tid]->_float_stats[STAT_run_time];
 	}
-	
+
 	assert(total_num_commits > 0);
 	out << "=Worker Thread=" << endl;
 	out << "    " << setw(30) << left << "Throughput:"
@@ -130,7 +130,7 @@ void Stats::output(std::ostream * os)
 		if (i == STAT_txn_latency)
 			continue;
 		double total = 0;
-		for (uint32_t tid = 0; tid < g_total_num_threads; tid ++) 
+		for (uint32_t tid = 0; tid < g_total_num_threads; tid ++)
 			total += _stats[tid]->_float_stats[i];
 		string suffix = "";
 		if (i >= STAT_execute_phase && i <= STAT_network) {
@@ -141,7 +141,7 @@ void Stats::output(std::ostream * os)
 		out << " (";
 		for (uint32_t tid = 0; tid < g_total_num_threads; tid ++)
 			out << _stats[tid]->_float_stats[i] / BILLION << ',';
-		out << ')' << endl; 
+		out << ')' << endl;
 	}
 
 	out << endl;
@@ -154,13 +154,13 @@ void Stats::output(std::ostream * os)
 
 	out << "    " << setw(30) << left << "average_latency:" << avg_latency / BILLION << endl;
 	// print latency distribution
-	out << "    " << setw(30) << left << "90%_latency:" 
+	out << "    " << setw(30) << left << "90%_latency:"
 		<< _aggregate_latency[(uint64_t)(total_num_commits * 0.90)] / BILLION << endl;
-	out << "    " << setw(30) << left << "95%_latency:" 
+	out << "    " << setw(30) << left << "95%_latency:"
 		<< _aggregate_latency[(uint64_t)(total_num_commits * 0.95)] / BILLION << endl;
-	out << "    " << setw(30) << left << "99%_latency:" 
+	out << "    " << setw(30) << left << "99%_latency:"
 		<< _aggregate_latency[(uint64_t)(total_num_commits * 0.99)] / BILLION << endl;
-	out << "    " << setw(30) << left << "max_latency:" 
+	out << "    " << setw(30) << left << "max_latency:"
 		<< _aggregate_latency[total_num_commits - 1] / BILLION << endl;
 
 	out << endl;
@@ -171,16 +171,16 @@ void Stats::output(std::ostream * os)
 		for (uint32_t tid = 0; tid < g_total_num_threads; tid ++) {
 			total += _stats[tid]->_int_stats[i];
 		}
-		out << "    " << setw(30) << left << statsIntName[i] + ':'<< total; 
+		out << "    " << setw(30) << left << statsIntName[i] + ':'<< total;
 		out << " (";
 		for (uint32_t tid = 0; tid < g_total_num_threads; tid ++)
 			out << _stats[tid]->_int_stats[i] << ',';
-		out << ')' << endl; 
+		out << ')' << endl;
 
 	}
 #if WORKLOAD == TPCC
 	out << "TPCC Per Txn Type Commits/Aborts" << endl;
-	out << "    " << setw(18) << left << "Txn Name" 
+	out << "    " << setw(18) << left << "Txn Name"
 		<< setw(12) << left << "Commits"
 		<< setw(12) << left << "Aborts"
 		<< setw(12) << left << "Time" << endl;
@@ -192,30 +192,30 @@ void Stats::output(std::ostream * os)
 			aborts += _stats[tid]->_aborts_per_txn_type[i];
 			time += 1.0 * _stats[tid]->_time_per_txn_type[i] / BILLION;
 		}
-		out << "    " << setw(18) << left << TPCCHelper::get_txn_name(i) 
+		out << "    " << setw(18) << left << TPCCHelper::get_txn_name(i)
 			<< setw(12) << left << commits
-			<< setw(12) << left << aborts 
+			<< setw(12) << left << aborts
 			<< setw(12) << left << time << endl;
 	}
-#endif 
+#endif
 
 	// print stats for input thread
 	out << "=Input/Output Thread=" << endl;
-	out << "    " << setw(18) << left 
-		<< "Message Types" 
-		<< setw(12) << left << "#recv" 
-		<< setw(12) << left << "bytesRecv" 
+	out << "    " << setw(18) << left
+		<< "Message Types"
+		<< setw(12) << left << "#recv"
+		<< setw(12) << left << "bytesRecv"
 		<< setw(12) << left << "#sent"
 		<< setw(12) << left << "bytesSent"
-		<< setw(12) << left << "#committed" 
+		<< setw(12) << left << "#committed"
 		<< setw(12) << left << "bytesCommitted" << endl;
 
 	for (uint32_t i = 0; i < Message::NUM_MSG_TYPES; i++) {
 		string msg_name = Message::get_name( (Message::Type)i );
-		out << "    " << setw(18) << left << msg_name 
-			 << setw(12) << left << _stats[g_total_num_threads - 2]->_msg_count[i] 
-			 << setw(12) << left << _stats[g_total_num_threads - 2]->_msg_size[i] 
-			 << setw(12) << left << _stats[g_total_num_threads - 1]->_msg_count[i] 
+		out << "    " << setw(18) << left << msg_name
+			 << setw(12) << left << _stats[g_total_num_threads - 2]->_msg_count[i]
+			 << setw(12) << left << _stats[g_total_num_threads - 2]->_msg_size[i]
+			 << setw(12) << left << _stats[g_total_num_threads - 1]->_msg_count[i]
 			 << setw(12) << left << _stats[g_total_num_threads - 1]->_msg_size[i];
 		uint64_t committed_count = 0;
 		uint64_t committed_size = 0;
@@ -228,19 +228,19 @@ void Stats::output(std::ostream * os)
 			<< endl;
 	}
 
-	// print the checkpoints 
+	// print the checkpoints
 	if (_checkpoints.size() > 1) {
 		out << "\n=Check Points=\n" << endl;
 		out << "Metrics:\tthr,";
-		for	(uint32_t i = 0; i < NUM_INT_STATS; i++) 
+		for	(uint32_t i = 0; i < NUM_INT_STATS; i++)
 			out << statsIntName[i] << ',';
-		for	(uint32_t i = 0; i < NUM_FLOAT_STATS; i++) 
+		for	(uint32_t i = 0; i < NUM_FLOAT_STATS; i++)
 			out << statsFloatName[i] << ',';
-		for (uint32_t i = 0; i < Message::NUM_MSG_TYPES; i++) 
+		for (uint32_t i = 0; i < Message::NUM_MSG_TYPES; i++)
 			out << Message::get_name( (Message::Type)i ) << ',';
 		out << endl;
 	}
-	
+
 	for (uint32_t i = 1; i < _checkpoints.size(); i ++)
 	{
 		uint64_t num_commits = 0;
@@ -250,8 +250,8 @@ void Stats::output(std::ostream * os)
 		}
 		double thr = 1.0 * num_commits / STATS_CP_INTERVAL * 1000;
 		out << "CP" << i << ':';
-		out << "\t" << thr << ','; 
-		for	(uint32_t n = 0; n < NUM_INT_STATS; n++) { 
+		out << "\t" << thr << ',';
+		for	(uint32_t n = 0; n < NUM_INT_STATS; n++) {
 			uint64_t value = 0;
 			for (uint32_t tid = 0; tid < g_total_num_threads; tid ++) {
 				value += _checkpoints[i]->_stats[tid]->_int_stats[n];
@@ -278,7 +278,7 @@ void Stats::output(std::ostream * os)
 	}
 }
 
-void Stats::print() 
+void Stats::print()
 {
 	ofstream file;
 	bool write_to_file = false;
@@ -288,12 +288,12 @@ void Stats::print()
 	}
 	// compute the latency distribution
 #if COLLECT_LATENCY
-	for (uint32_t tid = 0; tid < g_total_num_threads; tid ++) { 
-		M_ASSERT(_stats[tid]->all_latency.size() == _stats[tid]->_int_stats[STAT_num_commits], 
-				 "%ld vs. %ld\n", 
+	for (uint32_t tid = 0; tid < g_total_num_threads; tid ++) {
+		M_ASSERT(_stats[tid]->all_latency.size() == _stats[tid]->_int_stats[STAT_num_commits],
+				 "%ld vs. %ld\n",
 				 _stats[tid]->all_latency.size(), _stats[tid]->_int_stats[STAT_num_commits]);
 		// TODO. should exclude txns during the warmup
-		_aggregate_latency.insert(_aggregate_latency.end(), 
+		_aggregate_latency.insert(_aggregate_latency.end(),
 								 _stats[tid]->all_latency.begin(),
 								 _stats[tid]->all_latency.end());
 	}
@@ -313,7 +313,7 @@ void Stats::print()
 void Stats::print_lat_distr() {
 }
 
-void 
+void
 Stats::checkpoint()
 {
 	Stats * stats = new Stats();
@@ -326,33 +326,33 @@ Stats::checkpoint()
     _num_cp ++;
 }
 
-void 
+void
 Stats::copy_from(Stats * stats)
 {
-	// TODO. this checkpoint may be slightly inconsistent. But it should be fine.  
-	for (uint32_t i = 0; i < g_total_num_threads; i ++)	
+	// TODO. this checkpoint may be slightly inconsistent. But it should be fine.
+	for (uint32_t i = 0; i < g_total_num_threads; i ++)
 		_stats[i]->copy_from(stats->_stats[i]);
 }
 
-double 
+double
 Stats::last_cp_bytes_sent(double &dummy_bytes)
 {
     uint32_t num_cp = _num_cp;
 	if (num_cp > 0) {
 		if (num_cp == 1) {
 			Stats * cp = _checkpoints[num_cp - 1];
-			dummy_bytes = cp->_stats[g_total_num_threads - 1]->_float_stats[STAT_dummy_bytes_sent]; 
+			dummy_bytes = cp->_stats[g_total_num_threads - 1]->_float_stats[STAT_dummy_bytes_sent];
     		return cp->_stats[g_total_num_threads - 1]->_float_stats[STAT_bytes_sent];
 		} else {
 			Stats * cp1 = _checkpoints[num_cp - 1];
 			Stats * cp2 = _checkpoints[num_cp - 2];
 			dummy_bytes = cp1->_stats[g_total_num_threads - 1]->_float_stats[STAT_dummy_bytes_sent]
-						- cp2->_stats[g_total_num_threads - 1]->_float_stats[STAT_dummy_bytes_sent]; 
-    		return cp1->_stats[g_total_num_threads - 1]->_float_stats[STAT_bytes_sent] 
-    			 - cp2->_stats[g_total_num_threads - 1]->_float_stats[STAT_bytes_sent]; 
+						- cp2->_stats[g_total_num_threads - 1]->_float_stats[STAT_dummy_bytes_sent];
+    		return cp1->_stats[g_total_num_threads - 1]->_float_stats[STAT_bytes_sent]
+    			 - cp2->_stats[g_total_num_threads - 1]->_float_stats[STAT_bytes_sent];
 		}
-	} else { 
+	} else {
 		dummy_bytes = 0;
-		return 0; 
+		return 0;
 	}
 }

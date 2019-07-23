@@ -14,11 +14,11 @@ int Row_naive_tictoc::_history_num = 30;
 #endif
 
 #if OCC_LOCK_TYPE == WAIT_DIE || OCC_WAW_LOCK
-bool 
+bool
 Row_naive_tictoc::CompareWait::operator() (TxnManager * en1, TxnManager * en2) const
-{ 
-	return MAN(en1)->get_priority() < MAN(en2)->get_priority(); 
-}  
+{
+	return MAN(en1)->get_priority() < MAN(en2)->get_priority();
+}
 #endif
 
 Row_naive_tictoc::Row_naive_tictoc(row_t * row)
@@ -35,22 +35,22 @@ Row_naive_tictoc::Row_naive_tictoc(row_t * row)
 	_delete_timestamp = 0;
 }
 
-RC 
-Row_naive_tictoc::read(TxnManager * txn, char * data, 
-				 uint64_t &wts, uint64_t &rts, bool latch, bool remote) 
+RC
+Row_naive_tictoc::read(TxnManager * txn, char * data,
+				 uint64_t &wts, uint64_t &rts, bool latch, bool remote)
 {
 	if (latch)
-		this->latch(); 
+		this->latch();
 	wts = _wts;
 	rts = _rts;
 	if (data)
 		memcpy(data, _row->get_data(), _row->get_tuple_size());
-	if (latch) 
+	if (latch)
 		unlatch();
-	return RCOK; 
+	return RCOK;
 }
-	
-RC 
+
+RC
 Row_naive_tictoc::write(TxnManager * txn, uint64_t &wts, uint64_t &rts, bool latch)
 {
 	RC rc = RCOK;
@@ -60,7 +60,7 @@ Row_naive_tictoc::write(TxnManager * txn, uint64_t &wts, uint64_t &rts, bool lat
 
 	if (latch)
 		pthread_mutex_lock( _latch );
-  	
+
 	if (!_ts_lock) {
 		_ts_lock = true;
 		_lock_owner = txn;
@@ -110,11 +110,11 @@ Row_naive_tictoc::unlatch()
 	pthread_mutex_unlock( _latch );
 }
 
-void 
+void
 Row_naive_tictoc::write_data(char * data, ts_t wts)
 {
 	latch();
-	if (_deleted) 
+	if (_deleted)
 		assert(wts < _delete_timestamp);
 
 	_wts = wts;
@@ -152,9 +152,9 @@ Row_naive_tictoc::try_renew(ts_t rts)
 	return success;
 }
 
-bool 
+bool
 Row_naive_tictoc::try_renew(ts_t wts, ts_t rts, ts_t &new_rts)
-{	
+{
 	if (wts != _wts) {
 		if(_wts < rts) {
 			INC_INT_STATS(int_inevitable, 1);
@@ -167,9 +167,9 @@ Row_naive_tictoc::try_renew(ts_t wts, ts_t rts, ts_t &new_rts)
 		}
 		return false;
 	}
-	latch(); 
+	latch();
 	if (_deleted) {
-		bool success = (wts == _wts && rts < _delete_timestamp); 	
+		bool success = (wts == _wts && rts < _delete_timestamp);
 		unlatch();
 		return success;
 	}
@@ -177,7 +177,7 @@ Row_naive_tictoc::try_renew(ts_t wts, ts_t rts, ts_t &new_rts)
 	if (_ts_lock) {
 		INC_INT_STATS(int_aborts_rs3, 1);  // Locked by others
 		// TODO. even if _ts_lock == true (meaning someone may write to the tuple soon)
-		// should check the lower bound of upcoming wts. Maybe we can still renew the current rts without 
+		// should check the lower bound of upcoming wts. Maybe we can still renew the current rts without
 		// hurting the upcoming write.
 		pthread_mutex_unlock( _latch );
 		return false;
@@ -196,7 +196,7 @@ Row_naive_tictoc::try_renew(ts_t wts, ts_t rts, ts_t &new_rts)
 		pthread_mutex_unlock( _latch );
 		return false;
 	}
-  	new_rts = _rts; 
+  	new_rts = _rts;
 	if (rts > _rts) {
 		_rts = rts;
 		new_rts = rts;
@@ -241,17 +241,17 @@ Row_naive_tictoc::try_lock(TxnManager * txn)
 {
 	RC rc = RCOK;
 	pthread_mutex_lock( _latch );
-  	
+
 	if (!_ts_lock) {
 		_ts_lock = true;
 		rc = RCOK;
-	} else 
+	} else
 		rc = ABORT;
 	pthread_mutex_unlock( _latch );
 	return rc;
 }
 
-void 
+void
 Row_naive_tictoc::release(TxnManager * txn, RC rc)
 {
 	pthread_mutex_lock( _latch );

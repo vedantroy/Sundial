@@ -12,8 +12,8 @@
 // In distributed system, w_id ranges from [0, g_num_wh * g_num_nodes)
 // global_w_id = local_w_id + g_node_id * g_num_wh
 
-QueryTPCC::QueryTPCC() 
-	: QueryBase() 
+QueryTPCC::QueryTPCC()
+	: QueryBase()
 {
 	// generate the local warehouse id.
 	uint32_t local_w_id = URand(1, g_num_wh);
@@ -33,28 +33,28 @@ QueryTPCC::QueryTPCC(QueryTPCC * query)
 // Payment
 ///////////////////////////////////////////
 
-QueryPaymentTPCC::QueryPaymentTPCC() 
-	: QueryTPCC() 
+QueryPaymentTPCC::QueryPaymentTPCC()
+	: QueryTPCC()
 {
 	type = TPCC_PAYMENT;
 	d_w_id = w_id;
-	
+
 	d_id = URand(1, DIST_PER_WARE);
 	uint32_t x = URand(1, 100);
 	uint32_t y = URand(1, 100);
 
-	if(x >= g_payment_remote_perc) { 
+	if(x >= g_payment_remote_perc) {
 		// home warehouse
 		c_d_id = d_id;
 		c_w_id = w_id;
-	} else {	
+	} else {
 		// remote warehouse
 		c_d_id = URand(1, DIST_PER_WARE);
 		if(g_num_wh * g_num_nodes > 1) {
 			do {
 				c_w_id = URand(1, g_num_wh * g_num_nodes);
 			} while(c_w_id == w_id);
-		} else 
+		} else
 			c_w_id = w_id;
 	}
 	if(y <= 60) {
@@ -69,21 +69,21 @@ QueryPaymentTPCC::QueryPaymentTPCC()
 	h_amount = URand(1, 5000);
 }
 
-	
+
 QueryPaymentTPCC::QueryPaymentTPCC(char * data)
 {
 	memcpy(this, data, sizeof(*this));
 }
 
 ///////////////////////////////////////////
-// New Order 
+// New Order
 ///////////////////////////////////////////
 
 QueryNewOrderTPCC::QueryNewOrderTPCC()
-	: QueryTPCC() 
+	: QueryTPCC()
 {
 	type = TPCC_NEW_ORDER;
-	
+
 	d_id = URand(1, DIST_PER_WARE);
 	c_id = NURand(1023, 1, g_cust_per_dist);
 	uint32_t rbk = URand(1, 100);
@@ -94,9 +94,9 @@ QueryNewOrderTPCC::QueryNewOrderTPCC()
 
 	for (uint32_t oid = 0; oid < ol_cnt; oid ++) {
 		items[oid].ol_i_id = NURand(8191, 1, g_max_items);
-		// handle roll back. invalid ol_i_id. 
+		// handle roll back. invalid ol_i_id.
 		if (oid == ol_cnt - 1 && rbk == 1)
-			items[oid].ol_i_id = 0; 
+			items[oid].ol_i_id = 0;
 		uint32_t x = URand(1, 100);
 		if (x > g_new_order_remote_perc || (g_num_wh == 1 && g_num_nodes == 1))
 			items[oid].ol_supply_w_id = w_id;
@@ -112,15 +112,15 @@ QueryNewOrderTPCC::QueryNewOrderTPCC()
 	for (uint32_t i = 0; i < ol_cnt; i ++) {
 		for (uint32_t j = 0; j < i; j++) {
 			if (items[i].ol_i_id == items[j].ol_i_id) {
-				items[i] = items[ol_cnt - 1]; 
+				items[i] = items[ol_cnt - 1];
 				ol_cnt --;
 				i--;
 			}
 		}
 	}
 #if DEBUG_ASSERT
-	for (uint32_t i = 0; i < ol_cnt; i ++) 
-		for (uint32_t j = 0; j < i; j++) 
+	for (uint32_t i = 0; i < ol_cnt; i ++)
+		for (uint32_t j = 0; j < i; j++)
 			assert(items[i].ol_i_id != items[j].ol_i_id);
 #endif
 }
@@ -138,7 +138,7 @@ QueryNewOrderTPCC::~QueryNewOrderTPCC()
 	delete items;
 }
 
-uint32_t 
+uint32_t
 QueryNewOrderTPCC::serialize(char * &raw_data)
 {
 	uint32_t size = sizeof(*this);
@@ -151,11 +151,11 @@ QueryNewOrderTPCC::serialize(char * &raw_data)
 }
 
 ///////////////////////////////////////////
-// Order Status 
+// Order Status
 ///////////////////////////////////////////
 
-QueryOrderStatusTPCC::QueryOrderStatusTPCC() 
-	: QueryTPCC() 
+QueryOrderStatusTPCC::QueryOrderStatusTPCC()
+	: QueryTPCC()
 {
 	type = TPCC_ORDER_STATUS;
 	d_id = URand(1, DIST_PER_WARE);

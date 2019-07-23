@@ -6,7 +6,7 @@ using namespace std;
 class UnstructuredBuffer
 {
 private:
-	char * _buf;		
+	char * _buf;
 	uint32_t _pos;
 	string _chars;
 public:
@@ -15,21 +15,21 @@ public:
 		_buf = buf;
 		_pos = 0;
 	}
-	
+
 	const char * data() { return _buf? _buf : _chars.data(); }
-	uint32_t size(); 
-	
+	uint32_t size();
+
 	template<class T> void put(T * data);
 	template<class T> void get(T * data);
 
 	template<class T> void put_front(T * data);
 	template<class T> void put_at(T * data, uint32_t pos);
-	
+
 	void put(char * data, uint32_t size);
 	void get(char * &data, uint32_t size);
 };
 
-template<class T> 
+template<class T>
 void UnstructuredBuffer::put(T * data)
 {
 	if (_buf) {
@@ -47,13 +47,13 @@ void UnstructuredBuffer::get(T * data)
 	_pos += sizeof(T);
 }
 
-template<class T> 
+template<class T>
 void UnstructuredBuffer::put_front(T * data)
 {
 	put_at(data, 0);
 }
 
-template<class T> 
+template<class T>
 void UnstructuredBuffer::put_at(T * data, uint32_t pos)
 {
 	assert(_buf == NULL);

@@ -12,7 +12,7 @@ CacheManager::CacheManager()
 {
 	_max_cache_size = g_local_cache_size * 1024; // in Bytes
 	_table_size = _max_cache_size / 1024;
-	_num_banks = 64; 
+	_num_banks = 64;
 	max_size_per_bank = _max_cache_size / _num_banks;
 	assert(_max_cache_size % _num_banks == 0);
 	if (_table_size > 0) {
@@ -21,7 +21,7 @@ CacheManager::CacheManager()
 	}
 	_last_output_time = get_sys_clock();
 	pthread_mutex_init( &_latch, NULL );
-	
+
 	_num_vote_local = 0;
 	_num_vote_remote = 0;
 	_read_cached_value = true;
@@ -31,37 +31,37 @@ CacheManager::~CacheManager()
 {
 	if (_table_size == 0)
 		return;
-	uint64_t occupancy = 0; 
+	uint64_t occupancy = 0;
 	for (uint32_t i = 0; i < _num_banks; i++)
 		occupancy += _banks[i].cur_size;
 	printf("%f%% (%ld/%ld)\n", 100.0 * occupancy / _max_cache_size, occupancy, _max_cache_size);
 }
 
-uint64_t 
-CacheManager::key_to_bucket(uint64_t key) 
+uint64_t
+CacheManager::key_to_bucket(uint64_t key)
 {
 	// the lower bits of a key is always the node id.
-	return (key ^ (key / _table_size)) % _table_size; 
+	return (key ^ (key / _table_size)) % _table_size;
 };
 
-uint64_t CacheManager::key_to_bank(uint64_t key) 
+uint64_t CacheManager::key_to_bank(uint64_t key)
 {
-	return (key / g_num_nodes) % _num_banks; 
+	return (key / g_num_nodes) % _num_banks;
 }
 
-bool 
-CacheManager::lookup(uint64_t key, char * data, uint64_t &wts, uint64_t &rts, 
+bool
+CacheManager::lookup(uint64_t key, char * data, uint64_t &wts, uint64_t &rts,
 					 bool &read_cached_value, uint64_t commit_ts)
 {
 	if (_table_size == 0)
 		return false;
 	uint64_t tt = get_sys_clock();
 	uint64_t bucket_id = key_to_bucket(key);
-	
+
 	uint32_t bank_id = key_to_bank(key);
 	Bank * bank = &_banks[bank_id];
 
-	bool readonly = false; 
+	bool readonly = false;
 	bool cached = _table[bucket_id].read_data(key, data, wts, rts, readonly, bank);
 
 	if (cached) {
@@ -77,7 +77,7 @@ CacheManager::lookup(uint64_t key, char * data, uint64_t &wts, uint64_t &rts,
 	#endif
 #endif
 		INC_INT_STATS(num_cache_hits, 1);
-	} else 
+	} else
 		INC_INT_STATS(num_cache_misses, 1);
 #if WORKLOAD == TPCC
 	uint64_t tab_wts, tab_rts;
@@ -88,11 +88,11 @@ CacheManager::lookup(uint64_t key, char * data, uint64_t &wts, uint64_t &rts,
 #endif
 
 	INC_FLOAT_STATS(cache, get_sys_clock() - tt);
-	return cached; 
+	return cached;
 }
 
 void
-CacheManager::update(uint64_t key, uint64_t rts) 
+CacheManager::update(uint64_t key, uint64_t rts)
 {
 	if (_table_size == 0)
 		return;
@@ -102,7 +102,7 @@ CacheManager::update(uint64_t key, uint64_t rts)
 	Bank * bank = &_banks[bank_id];
 	bank->latch();
 	Node * node = _table[bucket_id].update(key, rts);
-	if (node) { 
+	if (node) {
 		if (rts > node->row->manager->_rts) {
 			bank->pq.erase(node);
 			node->row->manager->_rts = rts;
@@ -115,20 +115,20 @@ CacheManager::update(uint64_t key, uint64_t rts)
 }
 
 
-void 
+void
 CacheManager::update_data(uint64_t key, uint64_t cts, char * data)
 {
 	if (_table_size == 0)
 		return;
 	uint64_t tt = get_sys_clock();
 	uint64_t bucket_id = key_to_bucket(key);
-	// this is to update locally cached data. 
-	// do not update LRU since we only want to cache read intensive data. 
+	// this is to update locally cached data.
+	// do not update LRU since we only want to cache read intensive data.
 	_table[bucket_id].update_data(key, cts, data);
 	INC_FLOAT_STATS(cache, get_sys_clock() - tt);
 }
 
-void 
+void
 CacheManager::update_or_insert(uint64_t key, char * data, uint64_t wts, uint64_t rts)
 {
 	if (_table_size == 0)
@@ -138,7 +138,7 @@ CacheManager::update_or_insert(uint64_t key, char * data, uint64_t wts, uint64_t
 	uint32_t bank_id = key_to_bank(key);
 	Bank * bank = &_banks[bank_id];
 	bank->latch();
-	
+
 	_table[bucket_id].update_or_insert(key, data, wts, rts, false, bank);
 	// Cache overflow
 	if (bank->cur_size > CacheManager::max_size_per_bank) {
@@ -151,7 +151,7 @@ CacheManager::update_or_insert(uint64_t key, char * data, uint64_t wts, uint64_t
 	INC_FLOAT_STATS(cache, get_sys_clock() - tt);
 }
 
-void 
+void
 CacheManager::remove(uint64_t key)
 {
 	if (_table_size == 0)
@@ -173,7 +173,7 @@ CacheManager::remove(uint64_t key)
 
 
 
-void 
+void
 CacheManager::update_table_lease(uint32_t table_id, uint64_t wts, uint64_t rts)
 {
 	pthread_mutex_lock( &_latch );
@@ -181,10 +181,10 @@ CacheManager::update_table_lease(uint32_t table_id, uint64_t wts, uint64_t rts)
 	pthread_mutex_unlock( &_latch );
 }
 
-bool 
-CacheManager::get_table_lease(uint32_t table_id, uint64_t &wts, uint64_t &rts) 
+bool
+CacheManager::get_table_lease(uint32_t table_id, uint64_t &wts, uint64_t &rts)
 {
-	if (_table_lease.find(table_id) == _table_lease.end()) 
+	if (_table_lease.find(table_id) == _table_lease.end())
 		return false;
 	wts = _table_lease[table_id].first;
 	rts = _table_lease[table_id].second;
@@ -200,8 +200,8 @@ CacheManager::Bucket::Bucket()
 	_latch = false;
 }
 
-bool 
-CacheManager::Bucket::read_data(uint64_t key, char * data, uint64_t &wts, uint64_t &rts, 
+bool
+CacheManager::Bucket::read_data(uint64_t key, char * data, uint64_t &wts, uint64_t &rts,
 								bool &readonly, Bank * bank) //read_cached_value)
 {
 	if (!_first_node)
@@ -219,7 +219,7 @@ CacheManager::Bucket::read_data(uint64_t key, char * data, uint64_t &wts, uint64
 	return node != NULL;
 }
 
-CacheManager::Node * 
+CacheManager::Node *
 CacheManager::Bucket::update(uint64_t key, uint64_t rts)
 {
 	get_latch();
@@ -230,28 +230,28 @@ CacheManager::Bucket::update(uint64_t key, uint64_t rts)
 	return node;
 }
 
-void 
+void
 CacheManager::Bucket::update_data(uint64_t key, uint64_t cts, char * data)
 {
 	get_latch();
 	Node * node = _first_node;
 	while (node && node->key != key)
 		node = node->next;
-	if (node) 
+	if (node)
 		node->row->manager->update(data, cts, cts);
 	release_latch();
 }
 
-CacheManager::Node * 
-CacheManager::Bucket::update_or_insert(uint64_t key, char * data, uint64_t wts, uint64_t rts, 
-									   bool readonly, 
+CacheManager::Node *
+CacheManager::Bucket::update_or_insert(uint64_t key, char * data, uint64_t wts, uint64_t rts,
+									   bool readonly,
 									   Bank * bank)
 {
 	get_latch();
 	Node * node = _first_node;
 	while (node && node->key != key)
 		node = node->next;
-	if (node) { 
+	if (node) {
 		// update
 		INC_INT_STATS(num_cache_updates, 1);
 		node->row->manager->update(data, wts, rts);
@@ -262,14 +262,14 @@ CacheManager::Bucket::update_or_insert(uint64_t key, char * data, uint64_t wts, 
 		return node;
 	} else {
 		// insert
-		// TODO. this assumes a single table in the system (YCSB). 
+		// TODO. this assumes a single table in the system (YCSB).
 		INC_INT_STATS(num_cache_inserts, 1);
 		table_t * table = glob_manager->get_workload()->get_table(0);
 		// create a new row.
 		row_t * row = new row_t(table);
 		row->manager->set_ts(wts, rts);
 		row->copy(data);
-	
+
 		// create a new node.
 		node = new Node(key);
 		node->row = row;
@@ -281,7 +281,7 @@ CacheManager::Bucket::update_or_insert(uint64_t key, char * data, uint64_t wts, 
 	}
 }
 
-CacheManager::Node * 
+CacheManager::Node *
 CacheManager::Bucket::remove_data(uint64_t key)
 {
 	get_latch();
@@ -294,20 +294,20 @@ CacheManager::Bucket::remove_data(uint64_t key)
 	if (node) {
 		if (!prev)
 			_first_node = _first_node->next;
-		else 
+		else
 			prev->next = node->next;
 	}
 	release_latch();
 	return node;
 }
 
-void 
+void
 CacheManager::Bucket::get_latch() {
-	while (!ATOM_CAS(_latch, false, true)) 
+	while (!ATOM_CAS(_latch, false, true))
 		PAUSE
 }
 
-void 
+void
 CacheManager::Bucket::release_latch() {
 	_latch = false;
 }
@@ -315,8 +315,8 @@ CacheManager::Bucket::release_latch() {
 /////////////////////////////////////
 // Node
 /////////////////////////////////////
-CacheManager::Node::~Node() 
-{ 
+CacheManager::Node::~Node()
+{
 	delete row;
 	row = NULL;
 }
@@ -348,7 +348,7 @@ CacheManager::Bank::unlatch()
 	pthread_mutex_unlock( &_latch );
 }
 
-CacheManager::Node * 
+CacheManager::Node *
 CacheManager::Bank::insert(Node * node)
 {
 	node->last_access_time = get_sys_clock();
@@ -359,14 +359,14 @@ CacheManager::Bank::insert(Node * node)
 }
 
 void
-CacheManager::Bank::remove(Node * node) 
+CacheManager::Bank::remove(Node * node)
 {
 	int n = pq.erase(node);
 	M_ASSERT(n > 0, "n=%d\n", n);
 	cur_size -= node->row->get_tuple_size();
 }
 
-CacheManager::Node * 
+CacheManager::Node *
 CacheManager::Bank::remove_front()
 {
 	set<Node *>::iterator it = pq.begin();
@@ -376,7 +376,7 @@ CacheManager::Bank::remove_front()
 	return node;
 }
 
-void 
+void
 CacheManager::vote_local()
 {
 	ATOM_ADD(_num_vote_local, 1);
@@ -384,19 +384,19 @@ CacheManager::vote_local()
 }
 
 
-void 
-CacheManager::vote_remote() 
+void
+CacheManager::vote_remote()
 {
 	ATOM_ADD(_num_vote_remote, 1);
 	update_voting_states();
 }
 
-void 		
+void
 CacheManager::update_voting_states()
 {
-	if (_num_vote_local + _num_vote_remote > 100000) {	
-		// NOTE. the following updates are not atomic. 
-		// But having some error is OK since the this is just an approximate. 
+	if (_num_vote_local + _num_vote_remote > 100000) {
+		// NOTE. the following updates are not atomic.
+		// But having some error is OK since the this is just an approximate.
 		_num_vote_local /= 2;
 		_num_vote_remote /= 2;
 		_read_cached_value = (1.0 * _num_vote_local / (_num_vote_remote + _num_vote_local) > g_read_intensity_thresh);

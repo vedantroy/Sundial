@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include "global.h"
 #include "helper.h"
@@ -7,8 +7,8 @@ class workload;
 class Message;
 
 // For distributed DBMS
-// A query can be either a full query or a sub query. 
-// A sub query is sent to be executed on a remote node.  
+// A query can be either a full query or a sub query.
+// A sub query is sent to be executed on a remote node.
 
 class RemoteQuery {
 public:
@@ -31,7 +31,7 @@ public:
 	uint64_t 	get_ts() { return _txn_ts; }
 	void 		set_ts(uint64_t txn_ts) { _txn_ts = txn_ts; }
 protected:
-	// timestamp of the transaction. Only used for remote requests.   
+	// timestamp of the transaction. Only used for remote requests.
 	uint64_t 	_txn_ts;
 #endif
 	Isolation 	_isolation_level;

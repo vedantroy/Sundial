@@ -10,14 +10,14 @@
 
 #if VALIDATION_LOCK == WAIT_DIE
 bool Row_maat::CompareWait::operator() (TxnManager * en1, TxnManager * en2) const
-{ 
-	return MAN(en1)->get_priority() < MAN(en2)->get_priority(); 
-}  
+{
+	return MAN(en1)->get_priority() < MAN(en2)->get_priority();
+}
 #endif
 
 Row_maat::Row_maat()
 {
-	_latch = new pthread_mutex_t; 
+	_latch = new pthread_mutex_t;
 	pthread_mutex_init( _latch, NULL );
 	_wts = 0;
 	_rts = 0;
@@ -30,8 +30,8 @@ Row_maat::Row_maat()
   	_deleted = false;
 	_delete_timestamp = 0;
 }
-	
-RC 
+
+RC
 Row_maat::read(TxnManager * txn, char * data, uint64_t &wts, uint64_t &rts, bool latch)
 {
 	if (latch)
@@ -45,10 +45,10 @@ Row_maat::read(TxnManager * txn, char * data, uint64_t &wts, uint64_t &rts, bool
 		pthread_mutex_unlock( _latch );
 	if (txn->is_sub_txn())
 		_num_remote_reads ++;
-	return RCOK; 
+	return RCOK;
 }
-	
-RC 
+
+RC
 Row_maat::write(TxnManager * txn, char * data, uint64_t &wts, uint64_t &rts, bool latch)
 {
 	RC rc = RCOK;
@@ -83,7 +83,7 @@ Row_maat::write_data(char * data, uint64_t commit_ts)
 	if (_deleted)
 		assert( _wts < _delete_timestamp );
 	_row->copy(data);
-	M_ASSERT(commit_ts > _rts, "row=%ld commit=%ld, _wts=%ld, _rts=%ld", 
+	M_ASSERT(commit_ts > _rts, "row=%ld commit=%ld, _wts=%ld, _rts=%ld",
 		_row->get_primary_key(), commit_ts, _wts, _rts);
 	_wts = _rts = commit_ts;
 	pthread_mutex_unlock( _latch );

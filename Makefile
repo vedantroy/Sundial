@@ -6,8 +6,8 @@ CFLAGS=-Wall -g -std=c++11
 SRC_DIRS = ./ ./benchmarks/ ./concurrency_control/ ./storage/ ./system/ ./transport/ ./utils/
 INCLUDE = -I. -I./benchmarks -I./concurrency_control -I./storage -I./system -I./transport -I./utils
 
-CFLAGS += $(INCLUDE) -D NOGRAPHITE=1 -Werror -O3 -g -ggdb
-LDFLAGS = -Wall -L./libs -L./nanomsg/lib/ -pthread -lrt -std=c++0x -O3 -ljemalloc 
+CFLAGS += $(INCLUDE) -D NOGRAPHITE=1 -O3 -g -ggdb #-Werror
+LDFLAGS = -Wall -L./libs -L./nanomsg/lib/ -pthread -lrt -std=c++0x -O3 #-ljemalloc
 LDFLAGS += $(CFLAGS)
 
 CPPS = $(foreach dir, $(SRC_DIRS), $(wildcard $(dir)*.cpp))

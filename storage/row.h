@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include <cassert>
 #include "global.h"
@@ -21,7 +21,7 @@ class INDEX;
 class row_t
 {
 public:
-	row_t() {}; 
+	row_t() {};
 	row_t(table_t * table);
 	~row_t();
 	RC init(table_t * host_table, uint64_t part_id);
@@ -39,14 +39,14 @@ public:
 	void copy(row_t * src);
 	void copy(char * data);
 
-	uint64_t 	get_primary_key(); 
+	uint64_t 	get_primary_key();
 	uint64_t 	get_index_key(INDEX * index);
 	uint64_t 	get_part_id() { return _part_id; };
 
-	
+
 	static char * get_value(Catalog * schema, uint32_t col_id, char * data);
 	static void   set_value(Catalog * schema, uint32_t col_id, char * data, char * value);
-	
+
 	void set_value(int id, void * ptr);
 	void get_value(int col_id, void * value);
 	char * get_value(int col_id);
@@ -56,7 +56,7 @@ public:
 	char * get_data();
 
 	void free_row();
-	
+
 	ROW_MAN * manager;
 	char * data;
 	table_t * table;

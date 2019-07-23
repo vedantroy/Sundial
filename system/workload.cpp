@@ -14,7 +14,7 @@ RC workload::init() {
 
 RC workload::init_schema(string schema_file) {
     assert(sizeof(uint64_t) == 8);
-    assert(sizeof(double) == 8);	
+    assert(sizeof(double) == 8);
 	string line;
 	ifstream fin(schema_file);
     Catalog * schema;
@@ -64,7 +64,7 @@ RC workload::init_schema(string schema_file) {
 			cur_tab->init(schema);
 			cur_tab->set_table_id( num_tables );
 			num_tables ++;
-			tables.push_back( cur_tab ); 
+			tables.push_back( cur_tab );
         } else if (!line.compare(0, 6, "INDEX=")) {
 			string iname;
 			iname = &line[6];
@@ -81,14 +81,14 @@ RC workload::init_schema(string schema_file) {
 				items.push_back(token);
 		    	line.erase(0, pos + 1);
 			}
-			
+
 			string tname(items[0]);
 			INDEX * index = (INDEX *) _mm_malloc(sizeof(INDEX), 64);
 			new(index) INDEX();
-			int part_cnt = 1; 
+			int part_cnt = 1;
 			uint32_t table_id = index_to_table(num_indexes);
 #if INDEX_STRUCT == IDX_HASH
-			if (WORKLOAD == YCSB) 
+			if (WORKLOAD == YCSB)
 				index->init(tables[ table_id ] , g_synth_table_size * 2);
 			else if (WORKLOAD == TPCC) {
 				assert(tables[table_id] != NULL);

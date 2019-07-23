@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include "global.h"
 #include "helper.h"
@@ -10,9 +10,9 @@ class table_t;
 class StoreProcedure;
 class UnstructuredBuffer;
 class RemoteQuery;
-class itemid_t; 
+class itemid_t;
 
-class CCManager 
+class CCManager
 {
 public:
 	static CCManager * create(TxnManager * txn);
@@ -21,19 +21,19 @@ public:
 	virtual ~CCManager() {};
 
 	virtual void 	init();
-	
-	// For algorithms other than TicToc, we don't care whether the txn is readonly or not.  
+
+	// For algorithms other than TicToc, we don't care whether the txn is readonly or not.
 	virtual bool	is_read_only() { return false; }
-	virtual RC 		register_remote_access(uint32_t remote_node_id, access_t type, uint64_t key, 
-										   uint32_t table_id) 
+	virtual RC 		register_remote_access(uint32_t remote_node_id, access_t type, uint64_t key,
+										   uint32_t table_id)
 					{ assert(false); }
-	virtual RC 		register_remote_access(uint32_t remote_node_id, access_t type, uint64_t key, 
-										   uint32_t table_id, uint32_t &msg_size, char * &msg_data) 
+	virtual RC 		register_remote_access(uint32_t remote_node_id, access_t type, uint64_t key,
+										   uint32_t table_id, uint32_t &msg_size, char * &msg_data)
 					{ return register_remote_access(remote_node_id, type, key, table_id); }
 
 	virtual RC 		get_row(row_t * row, access_t type, uint64_t key) { assert(false); }
 	virtual RC 		get_row(row_t * row, access_t type, char * &data, uint64_t key) = 0;
-	
+
 	virtual char * 	get_data(uint64_t key, uint32_t table_id) { assert(false); }
 	virtual char * 	get_data(uint32_t table_id) { assert(false); }
 	virtual char * 	get_last_data() { assert(false); }
@@ -47,10 +47,10 @@ protected:
 	virtual RC		index_delete(INDEX * index, uint64_t key) { assert(false); }
 public:
 	// rc is either COMMIT or Abort.
-	// the following function will cleanup the txn. e.g., release locks, etc.     
+	// the following function will cleanup the txn. e.g., release locks, etc.
 	virtual void cleanup(RC rc) { assert(false); }
 
-	StoreProcedure * get_store_procedure();	
+	StoreProcedure * get_store_procedure();
 
 	////////// for txn waiting /////////////
 	virtual bool 	is_txn_ready() = 0; // { assert(false); }
@@ -74,11 +74,11 @@ public:
 	virtual void 	get_remote_nodes(set<uint32_t> * _remote_nodes) {};
 	void 			get_remote_nodes_with_writes(set<uint32_t> * nodes);
 	virtual RC 		process_prepare_phase_coord() { return RCOK; }
-	virtual bool 	need_prepare_req(uint32_t remote_node_id, uint32_t &size, char * &data) 
+	virtual bool 	need_prepare_req(uint32_t remote_node_id, uint32_t &size, char * &data)
 	{ size = 0; data = NULL; return true; };
 	virtual RC 		process_prepare_req(uint32_t size, char * data, uint32_t &resp_size, char * &resp_data ) { return RCOK; }
 	virtual void 	process_prepare_resp(RC rc, uint32_t node_id, char * data) {};
-	
+
 	// amend phase
 	virtual RC 		process_amend_phase_coord() { return RCOK; }
 	virtual bool 	need_amend_req(uint32_t remote_node_id, uint32_t &size, char * &data) { return false; };
@@ -97,9 +97,9 @@ public:
 
 	virtual uint32_t get_log_record(char *& record) { assert(false); }
 protected:
-	volatile uint32_t	_num_lock_waits; 
+	volatile uint32_t	_num_lock_waits;
 	uint64_t		_timestamp;
-	
+
 	struct RemoteNodeInfo {
 		uint32_t node_id;
 		bool 	 has_write;
@@ -109,9 +109,9 @@ protected:
 
 
 	// TODO. different CC algorithms should have different ways to handle index consistency.
-	// For now, just ignore index concurrency control. 
+	// For now, just ignore index concurrency control.
 	// Since this is not a problem for YCSB and TPCC.
-	virtual RC		commit_insdel(); 
+	virtual RC		commit_insdel();
 	struct Access {
 		access_t 	type;
 		uint64_t 	key;
@@ -119,7 +119,7 @@ protected:
 		row_t * 	row;	// row == NULL for remote accesses
 		uint32_t	home_node_id;
 	};
-	
+
 	struct IndexAccess {
 		IndexAccess() {
 			index = NULL;
@@ -138,7 +138,7 @@ protected:
 	TxnManager * 		_txn;
 	struct InsertOp {
 		table_t * table;
-		row_t * row; 
+		row_t * row;
 	};
 	vector<InsertOp> _inserts;
 	vector<row_t *>	_deletes;

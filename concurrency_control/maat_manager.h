@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include "cc_manager.h"
 #include "txn.h"
@@ -26,40 +26,40 @@ public:
 
 	RC 			validate();
 	void 		cleanup(RC rc);
-	
+
 	// normal execution
 	uint32_t 	get_resp_size();
 	void 		get_resp_data(char * data);
 
 	void 		get_resp_data(uint32_t &size, char * &data);
-	//void get_resp_data(uint32_t &data_size, char * &data); 
+	//void get_resp_data(uint32_t &data_size, char * &data);
 	void 		process_remote_resp(uint32_t node_id, uint32_t size, char * resp_data);
 
 	// prepare phase
 	RC 			handle_ts_ranges();
-	RC 			process_prepare_phase_coord(); 
+	RC 			process_prepare_phase_coord();
 	RC 			continue_prepare_phase_coord();
 	void 		get_remote_nodes(set<uint32_t> * _remote_nodes);
 
 	bool 		need_prepare_req(uint32_t remote_node_id, uint32_t &size, char * &data);
 	RC 			process_prepare_req( uint32_t size, char * data, uint32_t &resp_size, char * &resp_data );
 	void 		process_prepare_resp(RC rc, uint32_t node_id, char * data);
-	
+
 	// commit phase
 	void 		finalize_commit_ts();
 	void 		process_commit_phase_coord(RC rc);
-	RC			commit_insdel(); 
+	RC			commit_insdel();
 	bool 		need_commit_req(RC rc, uint32_t node_id, uint32_t &size, char * &data);
-	void 		process_commit_req(RC rc, uint32_t size, char * data); 
+	void 		process_commit_req(RC rc, uint32_t size, char * data);
 	void 		abort();
 
-	// handle WAIT_DIE validation 
+	// handle WAIT_DIE validation
 	void 		set_ts(uint64_t timestamp) { _timestamp = timestamp; }
-	uint64_t 	get_priority() { return _timestamp; } 
+	uint64_t 	get_priority() { return _timestamp; }
 	void 		set_txn_ready(RC rc);
 	bool 		is_txn_ready();
 	bool 		is_signal_abort() { return _signal_abort; }
-	
+
 	void 		latch() { pthread_mutex_lock(_latch); }
 	void 		unlatch() { pthread_mutex_unlock(_latch); }
     pthread_mutex_t * 	_latch;   	 // to guarantee read/write consistency
@@ -80,7 +80,7 @@ private:
 	};
 	static bool 	compare(AccessMaaT * ac1, AccessMaaT * ac2);
 	AccessMaaT * 	find_access(uint64_t key, uint32_t table_id, vector<AccessMaaT> * set);
-	
+
 	vector<AccessMaaT>			_access_set;
 	vector<AccessMaaT>			_remote_set;
 	AccessMaaT * 				_last_access;
@@ -94,7 +94,7 @@ private:
 	set<TxnManager*>  txnsBeforeThisTxn;
 	set<TxnManager*>  txnsAfterThisTxn;
 
-	////////// Only used in the coordinator 
+	////////// Only used in the coordinator
 	struct RemoteNodeInfo {
 		uint32_t node_id;
 		bool 	 readonly;
@@ -102,7 +102,7 @@ private:
 		uint64_t max_commit_ts;
 		uint64_t commit_ts_upper_bound; // NOT in use
 	};
-	vector<RemoteNodeInfo> _remote_node_info;	
+	vector<RemoteNodeInfo> _remote_node_info;
 	///////////////////////////////////////
 	void split_read_write_set();
 	RC lock_write_set();

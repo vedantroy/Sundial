@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include "global.h"
 #include "helper.h"
@@ -24,8 +24,8 @@ public:
 		COMMITTED,
 		ABORTED
 	};
-	bool waiting_for_remote; 
-	bool waiting_for_lock; 
+	bool waiting_for_remote;
+	bool waiting_for_lock;
 
 	TxnManager(QueryBase * query, ServerThread * thread);
 	TxnManager(Message * msg, ServerThread * thread);
@@ -38,8 +38,8 @@ public:
 	uint64_t 		get_txn_id() { return _txn_id; }
 
 	// wake up a waiting txn
-	void  			set_txn_ready(RC rc); 	
-	bool 			is_txn_ready(); 
+	void  			set_txn_ready(RC rc);
+	bool 			is_txn_ready();
 
 	// debug time
 	uint64_t		_start_wait_time;
@@ -65,8 +65,8 @@ public:
 	bool is_sub_txn() 					{ return _is_sub_txn; }
 	void set_msg(Message * msg) 		{ _msg = msg; }
 
-	State 			get_txn_state() { return _txn_state; } 
-	void 			set_txn_state(State state) { _txn_state = state; } 
+	State 			get_txn_state() { return _txn_state; }
+	void 			set_txn_state(State state) { _txn_state = state; }
 
 	// Stats
 	void 			update_stats();
@@ -76,8 +76,8 @@ public:
 
 	// Debug
 	void 			print_state();
-	
-	// remote nodes involved in this txn 
+
+	// remote nodes involved in this txn
 	set<uint32_t> 	remote_nodes_involved;
 	set<uint32_t>   aborted_remote_nodes;
 	set<uint32_t>	readonly_remote_nodes;
@@ -92,8 +92,8 @@ private:
 
 	// Concurrency control manager (2PL, TicToc, etc.)
 	CCManager * 	_cc_manager;
-	
-	// For remote request, only keep msg. 
+
+	// For remote request, only keep msg.
 	Message * 		_msg;
 
 	State 			_txn_state;
@@ -103,40 +103,40 @@ private:
 
 	RC finish(RC rc) { assert(false); }
 
-	// For OCC without acquiring write locks during execution, 
+	// For OCC without acquiring write locks during execution,
 	// a thrid lock_write_set phase is required before 2PC.
-	// TODO should give a differet 
+	// TODO should give a differet
 	bool			_remote_txn_abort;
-	
+
 	// read phse
 	RC process_local_miss();
-	RC process_remote_req(Message * msg);	
-	RC process_renew_req(Message * msg); 
+	RC process_remote_req(Message * msg);
+	RC process_renew_req(Message * msg);
 	RC process_remote_resp(Message * msg);
 
-#if CC_ALG == NAIVE_TICTOC  
-	// For naive TicToc or naive Silo, we need three phase commit. 
+#if CC_ALG == NAIVE_TICTOC
+	// For naive TicToc or naive Silo, we need three phase commit.
 	// The following lock phase is only for these two algorithms
-	RC process_lock_phase();		
-	RC process_lock_req(Message * msg);		
-	RC process_lock_resp(Message * msg);		
+	RC process_lock_phase();
+	RC process_lock_req(Message * msg);
+	RC process_lock_resp(Message * msg);
 #endif
 
 	// prepare phase
-	RC process_2pc_prepare_phase(); 
+	RC process_2pc_prepare_phase();
 	RC process_2pc_prepare_req(Message * msg);
 	RC process_2pc_prepare_resp(Message * msg);
-	// for F1 and TicToc. 
-	// a txn in F1/TicToc may need to wait during the prepare phase.  
-	RC continue_prepare_phase(); 
+	// for F1 and TicToc.
+	// a txn in F1/TicToc may need to wait during the prepare phase.
+	RC continue_prepare_phase();
 
 	// commit phase
-	// rc can be either COMMIT or Abort. 
-	RC process_2pc_commit_phase(RC rc); 
+	// rc can be either COMMIT or Abort.
+	RC process_2pc_commit_phase(RC rc);
 	RC process_2pc_commit_req(Message * msg);
 	RC process_2pc_commit_resp();
-	
-	
+
+
 	bool 			_is_sub_txn;
 	uint32_t 		_src_node_id; // for sub_query, the src_node is stored.
 
@@ -151,19 +151,19 @@ private:
 
 	uint64_t 		_commit_start_time;
 	uint64_t 		_finish_time;
-	
+
 	uint64_t 		_lock_wait_time;
 	uint64_t 		_lock_wait_start_time;
-	
-	
+
+
 	uint64_t		_net_wait_start_time;
 	uint64_t 		_net_wait_time;
 
-	// txn_id format. Each txn has a unique ID 
-	// | per thread monotonically increasing ID   |  thread ID   |   Node ID | 
+	// txn_id format. Each txn has a unique ID
+	// | per thread monotonically increasing ID   |  thread ID   |   Node ID |
 	uint64_t 		_txn_id;
 
-	// for continued prepare. 
+	// for continued prepare.
 	uint32_t 		_resp_size;
 	char *			_resp_data;
 	// locality handler for TicToc

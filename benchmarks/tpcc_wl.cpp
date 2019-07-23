@@ -76,7 +76,7 @@ WorkloadTPCC::table_to_indexes(uint32_t table_id, set<INDEX *> * indexes)
 			return;
 		case TAB_HISTORY:
 			return;
-		case TAB_NEWORDER: 
+		case TAB_NEWORDER:
 			indexes->insert(i_neworder);
 			return;
 		case TAB_ORDER:
@@ -92,13 +92,13 @@ WorkloadTPCC::table_to_indexes(uint32_t table_id, set<INDEX *> * indexes)
 		case TAB_STOCK:
 			indexes->insert(i_stock);
 			return;
-		default: 
+		default:
 			assert(false);
 	}
 }
 
 
-uint32_t 
+uint32_t
 WorkloadTPCC::index_to_table(uint32_t index_id)
 {
 	switch(index_id) {
@@ -127,14 +127,14 @@ WorkloadTPCC::index_to_table(uint32_t index_id)
 	}
 }
 
-uint32_t 
+uint32_t
 WorkloadTPCC::key_to_node(uint64_t key, uint32_t table_id)
 {
 	assert(false);
 	switch(table_id) {
 		case TAB_WAREHOUSE:
 			return TPCCHelper::wh_to_node( key );
-		case TAB_DISTRICT:  
+		case TAB_DISTRICT:
 			return TPCCHelper::wh_to_node( key / DIST_PER_WARE );
 	}
 }
@@ -150,15 +150,15 @@ RC WorkloadTPCC::init_table() {
 // 	- dist
 //  	- cust
 //	  	- hist
-//		- order 
+//		- order
 //		- new order
 //		- order line
 /**********************************/
 	pthread_t * p_thds = new pthread_t[g_num_wh - 1];
-	for (uint32_t i = 0; i < g_num_wh - 1; i++) 
+	for (uint32_t i = 0; i < g_num_wh - 1; i++)
 		pthread_create(&p_thds[i], NULL, threadInitWarehouse, this);
 	threadInitWarehouse(this);
-	for (uint32_t i = 0; i < g_num_wh - 1; i++) 
+	for (uint32_t i = 0; i < g_num_wh - 1; i++)
 		pthread_join(p_thds[i], NULL);
 
 	printf("TPCC Data Initialization Complete!\n");
@@ -184,10 +184,10 @@ void WorkloadTPCC::init_tab_item() {
 		row->set_value(I_PRICE, &id);
 		char data[50];
     	MakeAlphaString(26, 50, data);
-		if (RAND(10) == 0) 
-			strcpy(data, "original");		
+		if (RAND(10) == 0)
+			strcpy(data, "original");
 		row->set_value(I_DATA, data);
-		
+
 		index_insert(i_item, i, row, 0);
 	}
 }
@@ -218,7 +218,7 @@ void WorkloadTPCC::init_tab_wh(uint64_t wid) {
    	double w_ytd=300000.00;
 	row->set_value(W_TAX, &tax);
 	row->set_value(W_YTD, &w_ytd);
-	
+
 	index_insert(i_warehouse, wid, row, wh_to_part(wid));
 	return;
 }
@@ -227,7 +227,7 @@ void WorkloadTPCC::init_tab_dist(uint64_t wid) {
 	for (uint64_t did = 1; did <= DIST_PER_WARE; did++) {
 		row_t * row;
 		t_district->get_new_row(row, 0);
-		
+
 		row->set_value(D_ID, &did);
 		row->set_value(D_W_ID, &wid);
 		char name[10];
@@ -241,10 +241,10 @@ void WorkloadTPCC::init_tab_dist(uint64_t wid) {
         MakeAlphaString(10, 20, street);
 		row->set_value(D_CITY, street);
 		char state[2];
-		MakeAlphaString(2, 2, state); 
+		MakeAlphaString(2, 2, state);
 		row->set_value(D_STATE, state);
 		char zip[9];
-    	MakeNumberString(9, 9, zip); 
+    	MakeNumberString(9, 9, zip);
 		row->set_value(D_ZIP, zip);
     	double tax = (double)URand(0L, 200L) / 1000.0;
     	double w_ytd=30000.00;
@@ -252,13 +252,13 @@ void WorkloadTPCC::init_tab_dist(uint64_t wid) {
 		row->set_value(D_YTD, &w_ytd);
 		int64_t id = 3001;
 		row->set_value(D_NEXT_O_ID, &id);
-		
+
 		index_insert(i_district, distKey(wid, did), row, wh_to_part(wid));
 	}
 }
 
 void WorkloadTPCC::init_tab_stock(uint64_t wid) {
-	
+
 	for (uint64_t iid = 1; iid <= g_max_items; iid++) {
 		row_t * row;
 		t_stock->get_new_row(row, 0);
@@ -312,19 +312,19 @@ void WorkloadTPCC::init_tab_cust(uint64_t did, uint64_t wid) {
         MakeAlphaString(10, 20, street);
 		row->set_value(C_STREET_2, street);
         MakeAlphaString(10, 20, street);
-		row->set_value(C_CITY, street); 
+		row->set_value(C_CITY, street);
 		char state[2];
-		MakeAlphaString(2, 2, state); 
+		MakeAlphaString(2, 2, state);
 		row->set_value(C_STATE, state);
 		char zip[9];
-    	MakeNumberString(9, 9, zip); 
+    	MakeNumberString(9, 9, zip);
 		row->set_value(C_ZIP, zip);
 		char phone[16];
-  		MakeNumberString(16, 16, phone); 
+  		MakeNumberString(16, 16, phone);
 		row->set_value(C_PHONE, phone);
 		int64_t since = 0;
 		int64_t credit_lim = 50000;
-		int64_t delivery_cnt = 0; 
+		int64_t delivery_cnt = 0;
 		row->set_value(C_SINCE, &since);
 		row->set_value(C_CREDIT_LIM, &credit_lim);
 		row->set_value(C_DELIVERY_CNT, &delivery_cnt);
@@ -376,13 +376,13 @@ void WorkloadTPCC::init_tab_hist(uint64_t c_id, uint64_t d_id, uint64_t w_id) {
 }
 
 void WorkloadTPCC::init_tab_order(uint64_t did, uint64_t wid) {
-	uint64_t perm[g_cust_per_dist]; 
+	uint64_t perm[g_cust_per_dist];
 	init_permutation(perm, wid); /* initialize permutation of customer numbers */
 	for (uint64_t oid = 1; oid <= g_cust_per_dist; oid++) {
 		row_t * row;
 		t_order->get_new_row(row, 0);
 		uint64_t o_ol_cnt = 1;
-		uint64_t cid = perm[oid - 1]; 
+		uint64_t cid = perm[oid - 1];
 		row->set_value(O_ID, &oid);
 		row->set_value(O_C_ID, &cid);
 		row->set_value(O_D_ID, &did);
@@ -390,21 +390,21 @@ void WorkloadTPCC::init_tab_order(uint64_t did, uint64_t wid) {
 		uint64_t o_entry = 2013;
 		row->set_value(O_ENTRY_D, &o_entry);
 		int64_t id = (oid < 2101)? URand(1, 10) : 0;
-		
+
 		row->set_value(O_CARRIER_ID, &id);
-		
+
 		o_ol_cnt = URand(5, 15);
 		row->set_value(O_OL_CNT, &o_ol_cnt);
 		int64_t all_local = 1;
 		row->set_value(O_ALL_LOCAL, &all_local);
-		
+
 		uint64_t key = orderKey( wid, did, oid);
 		index_insert(i_order, key, row, 0);
 
 		key = custKey(wid, did, cid);
 		index_insert(i_order_cust, key, row, 0);
 
-		// ORDER-LINE	
+		// ORDER-LINE
 #if !TPCC_SMALL
 		for (uint64_t ol = 1; ol <= o_ol_cnt; ol++) {
 			t_orderline->get_new_row(row, 0);
@@ -416,7 +416,7 @@ void WorkloadTPCC::init_tab_order(uint64_t did, uint64_t wid) {
 			row->set_value(OL_I_ID, &id);
 			row->set_value(OL_SUPPLY_W_ID, &wid);
 			double amount = 0;
-			int64_t date = 0; 
+			int64_t date = 0;
 			if (oid < 2101) {
 				row->set_value(OL_DELIVERY_D, &o_entry);
 				row->set_value(OL_AMOUNT, &amount);
@@ -453,11 +453,11 @@ void WorkloadTPCC::init_tab_order(uint64_t did, uint64_t wid) {
 | InitPermutation
 +==================================================================*/
 
-void 
+void
 WorkloadTPCC::init_permutation(uint64_t * perm_c_id, uint64_t wid) {
 	uint32_t i;
 	// Init with consecutive values
-	for(i = 0; i < g_cust_per_dist; i++) 
+	for(i = 0; i < g_cust_per_dist; i++)
 		perm_c_id[i] = i+1;
 
 	// shuffle
@@ -474,15 +474,15 @@ WorkloadTPCC::init_permutation(uint64_t * perm_c_id, uint64_t wid) {
 | ROUTINE NAME
 | GetPermutation
 +==================================================================*/
-void * 
-WorkloadTPCC::threadInitWarehouse(void * This) 
+void *
+WorkloadTPCC::threadInitWarehouse(void * This)
 {
 	WorkloadTPCC * wl = (WorkloadTPCC *) This;
 	int tid = ATOM_FETCH_ADD(wl->next_tid, 1);
 	uint32_t wid = g_num_wh * g_node_id + tid + 1;
-	
+
 	assert((uint64_t)tid < g_num_wh);
-	
+
 	if (tid == 0)
 		wl->init_tab_item();
 	wl->init_tab_wh( wid );
@@ -491,19 +491,19 @@ WorkloadTPCC::threadInitWarehouse(void * This)
 	for (uint64_t did = 1; did <= DIST_PER_WARE; did++) {
 		wl->init_tab_cust(did, wid);
 		wl->init_tab_order(did, wid);
-		for (uint64_t cid = 1; cid <= g_cust_per_dist; cid++) 
+		for (uint64_t cid = 1; cid <= g_cust_per_dist; cid++)
 			wl->init_tab_hist(cid, did, wid);
 	}
 	return NULL;
 }
 
-StoreProcedure * 
+StoreProcedure *
 WorkloadTPCC::create_store_procedure(TxnManager * txn, QueryBase * query)
 {
 	return new TPCCStoreProcedure(txn, query);
 }
-	
-QueryBase * 
+
+QueryBase *
 WorkloadTPCC::deserialize_subquery(char * data)
 {
 	QueryTPCC * q = (QueryTPCC *)data;
@@ -517,13 +517,13 @@ WorkloadTPCC::deserialize_subquery(char * data)
 		assert(false);
 }
 
-QueryBase * 
-WorkloadTPCC::gen_query() 
+QueryBase *
+WorkloadTPCC::gen_query()
 {
 	while (true) {
 		double x = glob_manager->rand_double();
 		if (x < g_perc_payment)
-			return new QueryPaymentTPCC(); 
+			return new QueryPaymentTPCC();
 		x -= g_perc_payment;
 		if (x < g_perc_new_order)
 			return new QueryNewOrderTPCC();
@@ -531,8 +531,8 @@ WorkloadTPCC::gen_query()
 		if (x < g_perc_order_status)
 			return new QueryOrderStatusTPCC();
 		x -= g_perc_order_status;
-		
-		if (x < g_perc_delivery) 
+
+		if (x < g_perc_delivery)
 			return new QueryDeliveryTPCC();
 		x -= g_perc_delivery;
 		if (x < PERC_STOCKLEVEL)
@@ -542,8 +542,8 @@ WorkloadTPCC::gen_query()
 	return NULL;
 }
 
-QueryBase * 
-WorkloadTPCC::clone_query(QueryBase * query) 
+QueryBase *
+WorkloadTPCC::clone_query(QueryBase * query)
 {
 	QueryTPCC * q = (QueryTPCC *) query;
 	switch(q->type) {
@@ -562,7 +562,7 @@ WorkloadTPCC::clone_query(QueryBase * query)
 	}
 }
 
-uint64_t 		
+uint64_t
 WorkloadTPCC::get_primary_key(row_t * row)
 {
 	table_t * table = row->get_table();
@@ -575,13 +575,13 @@ WorkloadTPCC::get_primary_key(row_t * row)
 		case TAB_DISTRICT: {
 			row->get_value(D_ID, &did);
 			row->get_value(D_W_ID, &wid);
-			return distKey(wid, did); 
+			return distKey(wid, did);
 		}
 		case TAB_CUSTOMER: {
 			row->get_value(C_ID, &cid);
 			row->get_value(C_D_ID, &did);
 			row->get_value(C_W_ID, &wid);
-			return custKey(wid, did, cid);	
+			return custKey(wid, did, cid);
 		}
 		case TAB_HISTORY: {
 			assert(false);
@@ -590,7 +590,7 @@ WorkloadTPCC::get_primary_key(row_t * row)
 			row->get_value(NO_O_ID, &oid);
 			row->get_value(NO_D_ID, &did);
 			row->get_value(NO_W_ID, &wid);
-			return orderKey(wid, did, oid); 
+			return orderKey(wid, did, oid);
 		}
 		case TAB_ORDER: {
 			row->get_value(O_ID, &oid);
@@ -612,14 +612,14 @@ WorkloadTPCC::get_primary_key(row_t * row)
 		case TAB_STOCK: {
 			row->get_value(S_I_ID, &iid);
 			row->get_value(S_W_ID, &wid);
-			return stockKey(wid, iid); 
+			return stockKey(wid, iid);
 		}
 		default:
 			assert(false);
 	}
 }
 
-uint64_t 		
+uint64_t
 WorkloadTPCC::get_index_key(row_t * row, uint32_t index_id)
 {
 	int64_t wid, did, cid, oid;

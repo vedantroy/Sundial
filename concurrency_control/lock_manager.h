@@ -1,13 +1,13 @@
-#pragma once 
+#pragma once
 
 #include "cc_manager.h"
 
-class LockManager : public CCManager 
+class LockManager : public CCManager
 {
 public:
 	LockManager(TxnManager * txn);
-	~LockManager() {}	
-	
+	~LockManager() {}
+
 	RC 			get_row(row_t * row, access_t type, uint64_t key);
 	RC 			get_row(row_t * row, access_t type, char * &data, uint64_t key);
 	char * 		get_data( uint64_t key, uint32_t table_id);
@@ -30,10 +30,10 @@ public:
 	uint64_t 	get_priority() { return _timestamp; }
 	bool 		is_txn_ready();
 	void 		set_txn_ready(RC rc);
-	
+
 	// Prepare Phase
 	RC 			process_prepare_req(uint32_t size, char * data, uint32_t &resp_size, char * &resp_data);
-	
+
 	// commit phase
 	void 		process_commit_phase_coord(RC rc);
 	bool 		need_commit_req(RC rc, uint32_t node_id, uint32_t &size, char * &data);
@@ -46,9 +46,9 @@ private:
 		char *		data;	// original data.
 		uint32_t 	data_size;
 	};
-	
+
 	AccessLock * find_access(uint64_t key, uint32_t table_id, vector<AccessLock> * set);
-	
+
 	vector<AccessLock>		_access_set;
 	vector<AccessLock>		_remote_set;
 	vector<IndexAccess>		_index_access_set;

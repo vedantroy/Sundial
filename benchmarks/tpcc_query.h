@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include "global.h"
 #include "helper.h"
@@ -21,7 +21,7 @@ public:
 	QueryTPCC(QueryTPCC * query);
 	virtual ~QueryTPCC() {};
 	uint32_t type;
-	
+
 	uint64_t w_id;
 	uint64_t d_id;
 	uint64_t c_id;
@@ -30,12 +30,12 @@ public:
 class QueryPaymentTPCC : public QueryTPCC
 {
 public:
-	QueryPaymentTPCC();	
+	QueryPaymentTPCC();
 	QueryPaymentTPCC(QueryPaymentTPCC * query) {
 		memcpy(this, query, sizeof(*this));
 	};
 	QueryPaymentTPCC(char * data);
-	
+
 	uint64_t d_w_id;
 	uint64_t c_w_id;
 	uint64_t c_d_id;
@@ -44,7 +44,7 @@ public:
 	double h_amount;
 };
 
-class QueryNewOrderTPCC : public QueryTPCC 
+class QueryNewOrderTPCC : public QueryTPCC
 {
 public:
 	QueryNewOrderTPCC();
@@ -55,9 +55,9 @@ public:
 	}
 	QueryNewOrderTPCC(char * data);
 	~QueryNewOrderTPCC();
-	
+
 	uint32_t serialize(char * &raw_data);
-	
+
 	Item_no * items;
 	bool remote;
 
@@ -68,11 +68,11 @@ public:
 class QueryOrderStatusTPCC : public QueryTPCC
 {
 public:
-	QueryOrderStatusTPCC();	
+	QueryOrderStatusTPCC();
 	QueryOrderStatusTPCC(QueryOrderStatusTPCC * query) {
 		memcpy(this, query, sizeof(*this));
 	}
-	
+
 	bool by_last_name;
 	char c_last[LASTNAME_LEN];
 };
@@ -84,10 +84,10 @@ public:
 	QueryDeliveryTPCC(QueryDeliveryTPCC * query) {
 		memcpy(this, query, sizeof(*this));
 	}
-	
+
 	uint64_t d_id;
 	int64_t o_carrier_id;
-	int64_t	ol_delivery_d; 	
+	int64_t	ol_delivery_d;
 };
 
 class QueryStockLevelTPCC : public QueryTPCC

@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include <set>
 
@@ -10,12 +10,12 @@ class row_t;
 class Row_lock {
 public:
 	enum LockType {
-		LOCK_EX, 
+		LOCK_EX,
 		LOCK_SH,
 		LOCK_UPGRADING,
-		LOCK_NONE 
+		LOCK_NONE
 	};
-	Row_lock(); 
+	Row_lock();
 	Row_lock(row_t * row);
 	virtual 	~Row_lock() {}
 	virtual void init(row_t * row);
@@ -45,12 +45,12 @@ protected:
 		bool operator() (TxnManager * txn1, TxnManager * txn2) const;
 	};
 	std::set<TxnManager *, CompareLock >		_locking_set;
-	
+
 	struct CompareWait {
 		bool operator() (const WaitEntry &en1, const WaitEntry &en2) const;
 	};
-	std::set<WaitEntry, CompareWait> 			_waiting_set; 
-#else 
+	std::set<WaitEntry, CompareWait> 			_waiting_set;
+#else
 	std::set<TxnManager *>						_locking_set;
 #endif
 	TxnManager * 	_upgrading_txn;

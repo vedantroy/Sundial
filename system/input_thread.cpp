@@ -46,10 +46,10 @@ void InputThread::dealwithMsg(Message * msg, uint64_t t1)
 		} else {
 			uint32_t queue_id = 0;
 			queue_id = glob_manager->txnid_to_server_thread(msg->get_txn_id());
-			
-			M_ASSERT(queue_id % g_num_input_threads == GET_THD_ID % g_num_input_threads, 
+
+			M_ASSERT(queue_id % g_num_input_threads == GET_THD_ID % g_num_input_threads,
 					"queue_id=%d, thd_id=%ld\n", queue_id, GET_THD_ID);
-		
+
 			uint64_t tt = get_sys_clock();
 			bool success = input_queues[ queue_id ]->push((uint64_t)msg);
 			while (!success) {
@@ -92,7 +92,7 @@ InputThread::run()
 	return RCOK;
 }
 
-void 
+void
 InputThread::global_sync()
 {
 	// wait for message from each remote node.
@@ -102,19 +102,19 @@ InputThread::global_sync()
         Message * msg = _transport->recvMsg();
 		if (msg && msg->get_txn_id() == 0) {  // I assume that everyone will not send any other messages after they send their single msg whose txn_id=0
 			num_msg_received ++;
-		} else 
+		} else
 			dealwithMsg(msg, t1);
 		PAUSE;
 	}
 }
 
-void 
+void
 InputThread::measure_bw()
 {
 	// TODO right now, only measure from Node 0 to Node 1
-	if (g_num_nodes == 1 || g_node_id != 1) 
+	if (g_num_nodes == 1 || g_node_id != 1)
 		return;
-	Message * msg = NULL;	
+	Message * msg = NULL;
 	do{
 		msg = _transport->recvMsg();
 		if (msg)

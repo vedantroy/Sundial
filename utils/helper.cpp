@@ -7,7 +7,7 @@
 //}
 
 //uint64_t get_part_id(void * addr) {
-//	return ((uint64_t)addr / PAGE_SIZE) % g_part_cnt; 
+//	return ((uint64_t)addr / PAGE_SIZE) % g_part_cnt;
 //}
 
 //uint64_t key_to_part(uint64_t key) {
@@ -21,5 +21,5 @@
 //
 //uint64_t txn_id_to_thread_id(uint64_t txn_id)
 //{
-//	return (txn_id / g_num_server_nodes) % g_num_server_threads; 
+//	return (txn_id / g_num_server_nodes) % g_num_server_threads;
 //}

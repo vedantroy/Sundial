@@ -15,7 +15,7 @@ Bugs we have fixed for MaaT:
 3. Remove wrong statements of updating timestamp with a transaction ID
 4. Avoid breaking consistency in multi-threading support.
 5. Record both last reader and last writer
-6. 
+6.
 
 */
 #include <algorithm>
@@ -39,7 +39,7 @@ const unsigned long long TXN_ID_UNKNOWN = (1LL << 62); // quick hack
 // should be 1<<63, however the compiler panics about interger overflow
 #define AVG_NUM_CONFLICTS 5 // from MaaT code
 
-bool 
+bool
 MaaTManager::compare(AccessMaaT * ac1, AccessMaaT * ac2)
 {
 	return ac1->row->get_primary_key() < ac2->row->get_primary_key();
@@ -48,13 +48,13 @@ MaaTManager::compare(AccessMaaT * ac1, AccessMaaT * ac2)
 MaaTManager::MaaTManager(TxnManager * txn)
 	: CCManager(txn)
 {
-	// TODO. make these parameters static, initialize them in a static function 
+	// TODO. make these parameters static, initialize them in a static function
 	_validation_no_wait = true;
 
 	_max_wts = 0;
-	_write_copy_ptr = false; 
+	_write_copy_ptr = false;
 	_atomic_timestamp = false;
-    _refcount = 1;	
+    _refcount = 1;
 
 	_timestamp = glob_manager->get_ts(GET_THD_ID);
 	_num_lock_waits = 0;
@@ -73,11 +73,11 @@ MaaTManager::MaaTManager(TxnManager * txn)
 		if (_min_commit_ts > 10)
 			_min_commit_ts -= 10;  // TODO: what this logic is for?
 	}
-	
+
 }
 
 
-void 
+void
 MaaTManager::cleanup(RC rc)
 {
 #if DEBUG_REFCOUNT
@@ -93,7 +93,7 @@ MaaTManager::cleanup(RC rc)
 		delete it->local_data;
 	}
 
-	for (set<TxnManager*>::iterator it = txnsBeforeThisTxn.begin(); it 
+	for (set<TxnManager*>::iterator it = txnsBeforeThisTxn.begin(); it
 		!= txnsBeforeThisTxn.end(); it++)
 	{
 		MaaTManager* maatman = (MaaTManager*)((*it)->get_cc_manager());
@@ -105,11 +105,11 @@ MaaTManager::cleanup(RC rc)
 		if (rf == 0)
 		{
 			txn_table->remove_txn((*it));
-			delete (*it); 
+			delete (*it);
 		}
 	}
 
-	for (set<TxnManager*>::iterator it = txnsAfterThisTxn.begin(); it 
+	for (set<TxnManager*>::iterator it = txnsAfterThisTxn.begin(); it
 		!= txnsAfterThisTxn.end(); it++)
 	{
 		MaaTManager* maatman = (MaaTManager*)((*it)->get_cc_manager());
@@ -121,10 +121,10 @@ MaaTManager::cleanup(RC rc)
 		if (rf == 0)
 		{
 			txn_table->remove_txn((*it));
-			delete (*it); 
+			delete (*it);
 		}
 	}
-	for (set<TxnManager*>::iterator it = txnsRacingThisTxn.begin(); it 
+	for (set<TxnManager*>::iterator it = txnsRacingThisTxn.begin(); it
 		!= txnsRacingThisTxn.end(); it++)
 	{
 		MaaTManager* maatman = (MaaTManager*)((*it)->get_cc_manager());
@@ -146,8 +146,8 @@ MaaTManager::cleanup(RC rc)
 		if (it->local_data)
 			FREE(it->local_data, it->data_size);
 	}
-	for (vector<IndexAccessMaaT>::iterator it = _index_access_set.begin(); 
-		it != _index_access_set.end(); it ++ ) 
+	for (vector<IndexAccessMaaT>::iterator it = _index_access_set.begin();
+		it != _index_access_set.end(); it ++ )
 	{
 		it->manager->latch();
 		it->manager->_uncommitted_reader.erase(_txn);
@@ -157,7 +157,7 @@ MaaTManager::cleanup(RC rc)
 			delete it->rows;
 	}
 	if (rc == ABORT)
-		for (auto ins : _inserts) 
+		for (auto ins : _inserts)
 			delete ins.row;
 
 	txnsAfterThisTxn.clear();
@@ -178,30 +178,30 @@ MaaTManager::get_row(row_t * row, access_t type, uint64_t key)
 	uint64_t tt = get_sys_clock();
 	RC rc = RCOK;
 	// DEBUG
-	for (vector<AccessMaaT>::iterator it = _access_set.begin(); it != _access_set.end(); it ++) 
+	for (vector<AccessMaaT>::iterator it = _access_set.begin(); it != _access_set.end(); it ++)
 		assert(it->row != row);
 
 	AccessMaaT access;
-	access.home_node_id = g_node_id; 
+	access.home_node_id = g_node_id;
 	access.type = type;
 	access.row = row;
-	access.key = key; 
+	access.key = key;
 	access.data_size = row->get_tuple_size();
 	access.table_id = row->get_table()->get_table_id();
 	access.local_data = NULL;
 
 	// COMMENT: for both reads and writes, need to make a local copy of the data.
-	// Since there is no lock, locked is ignored. 
+	// Since there is no lock, locked is ignored.
 	access.local_data = (char *) MALLOC(row->get_tuple_size()); // how does get_tuple_size work?
 
 	Row_maat *rowman = row->manager;
 	rowman->latch();
-	
+
 	if(type == RD) {
 		rc = row->manager->read(_txn, access.local_data, access.wts, access.rts, false);
 		for (auto txnman : rowman->_uncommitted_writer) {
 			if (txnsAfterThisTxn.find(txnman) != txnsAfterThisTxn.end()) continue;
-			txnsAfterThisTxn.insert(txnman);			
+			txnsAfterThisTxn.insert(txnman);
 			MaaTManager * maatman = (MaaTManager*)(txnman->get_cc_manager());
 #if DEBUG_REFCOUNT
 			uint64_t rf = ATOM_ADD_FETCH(maatman->_refcount, 1);
@@ -213,8 +213,8 @@ MaaTManager::get_row(row_t * row, access_t type, uint64_t key)
 		}
 		rowman->unlatch();
 
-		// This needs to be atomic. Can we do better? 
-		// TODO. change to atomic CAS. 
+		// This needs to be atomic. Can we do better?
+		// TODO. change to atomic CAS.
 		pthread_mutex_lock(_latch);
 		_min_commit_ts = max(_min_commit_ts,
 				access.wts);
@@ -237,7 +237,7 @@ MaaTManager::get_row(row_t * row, access_t type, uint64_t key)
 		for (auto txnman : rowman->_uncommitted_writer) {
 			if (txnsAfterThisTxn.find(txnman) != txnsAfterThisTxn.end()) continue;
 			if (txnman == _txn) continue;
-			txnsAfterThisTxn.insert(txnman);			
+			txnsAfterThisTxn.insert(txnman);
 			MaaTManager * maatman = (MaaTManager*)(txnman->get_cc_manager());
 			assert(ATOM_ADD(maatman->_refcount, 1) > 0);
 		}
@@ -262,29 +262,29 @@ MaaTManager::get_row(row_t * row, access_t type, uint64_t key)
 	_access_set.push_back(access);
 	_last_access = &(*_access_set.rbegin());
 	INC_FLOAT_STATS(time_debug2, get_sys_clock() - tt);
-	
-	return rc; 
+
+	return rc;
 }
 
-RC			
+RC
 MaaTManager::get_row(row_t * row, access_t type, char * &data, uint64_t key)
 {
 	RC rc = get_row(row, type, key);
-	if (rc == RCOK) 
+	if (rc == RCOK)
 		data = _last_access->local_data;
 	return rc;
 }
 
 RC
-MaaTManager::register_remote_access(uint32_t remote_node_id, access_t type, uint64_t key, 
-									   uint32_t table_id) 
+MaaTManager::register_remote_access(uint32_t remote_node_id, access_t type, uint64_t key,
+									   uint32_t table_id)
 {
 	AccessMaaT ac;
 	_remote_set.push_back(ac);
 	AccessMaaT * access = &(*_remote_set.rbegin());
 	_last_access = access;
 	assert(remote_node_id != g_node_id);
-	
+
 	access->home_node_id = remote_node_id;
 	access->row = NULL;
 	access->type = type;
@@ -297,12 +297,12 @@ MaaTManager::register_remote_access(uint32_t remote_node_id, access_t type, uint
 RC
 MaaTManager::index_get_permission(access_t type, INDEX * index, uint64_t key, uint32_t limit)
 {
-	assert(type != WR); 
+	assert(type != WR);
 	RC rc = RCOK;
 	IndexAccessMaaT * access = NULL;
 	for (uint32_t i = 0; i < _index_access_set.size(); i ++) {
 		access = &_index_access_set[i];
-		if (access && access->index == index && access->key == key && access->type == type) 
+		if (access && access->index == index && access->key == key && access->type == type)
 			return RCOK;
 	}
 
@@ -314,34 +314,34 @@ MaaTManager::index_get_permission(access_t type, INDEX * index, uint64_t key, ui
 	access->type = type;
 	Row_maat * manager = index->index_get_manager(key);
 	access->manager = manager;
-	
+
 	if(type == RD) {
 		rc = manager->read(_txn, NULL, access->wts, access->rts, false);
 		assert(rc == RCOK);
 		for (auto txnman : manager->_uncommitted_writer) {
 			if (txnsAfterThisTxn.find(txnman) != txnsAfterThisTxn.end()) continue;
 			if (txnman == _txn) continue;
-			txnsAfterThisTxn.insert(txnman);			
+			txnsAfterThisTxn.insert(txnman);
 			MaaTManager * maatman = (MaaTManager*)(txnman->get_cc_manager());
 			assert(ATOM_ADD(maatman->_refcount, 1) > 0);
 		}
 		set<row_t *> * rows = index->read(key);
-		if (rows) { 
+		if (rows) {
 			if (rows->size() > limit) {
 				set<row_t *>::iterator it = rows->begin();
 				advance(it, 1);
 				access->rows = new set<row_t *>( rows->begin(), it );
-			} else 
+			} else
 				access->rows = new set<row_t *>( *rows );
 		}
 		manager->unlatch();
-		
+
 		pthread_mutex_lock(_latch);
 		_min_commit_ts = max(_min_commit_ts, access->wts);
 		pthread_mutex_unlock(_latch);
 	} else{
 		assert(type == INS || type == DEL);
-		rc = manager->write(_txn, NULL, access->wts, access->rts, false); 
+		rc = manager->write(_txn, NULL, access->wts, access->rts, false);
 		for (auto txnman : manager->_uncommitted_reader) {
 			if (txnsBeforeThisTxn.find(txnman) != txnsBeforeThisTxn.end()) continue;
 			if (txnman == _txn) continue;
@@ -352,7 +352,7 @@ MaaTManager::index_get_permission(access_t type, INDEX * index, uint64_t key, ui
 		for (auto txnman : manager->_uncommitted_writer) {
 			if (txnsAfterThisTxn.find(txnman) != txnsAfterThisTxn.end()) continue;
 			if (txnman == _txn) continue;
-			txnsAfterThisTxn.insert(txnman);			
+			txnsAfterThisTxn.insert(txnman);
 			MaaTManager * maatman = (MaaTManager*)(txnman->get_cc_manager());
 			assert(ATOM_ADD(maatman->_refcount, 1) > 0);
 		}
@@ -401,14 +401,14 @@ MaaTManager::index_delete(INDEX * index, uint64_t key)
 	return rc;
 }
 
-char * 
+char *
 MaaTManager::get_data(uint64_t key, uint32_t table_id)
 {
-	for (vector<AccessMaaT>::iterator it = _access_set.begin(); it != _access_set.end(); it ++) 
+	for (vector<AccessMaaT>::iterator it = _access_set.begin(); it != _access_set.end(); it ++)
 		if (it->key == key && it->table_id == table_id)
 			return it->local_data;
-	
-	for (vector<AccessMaaT>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++) 
+
+	for (vector<AccessMaaT>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++)
 		if (it->key == key && it->table_id == table_id)
 			return it->local_data;
 
@@ -428,7 +428,7 @@ MaaTManager::get_resp_data(uint32_t &size, char * &data)
 	// Format:
 	//	| n | (key, table_id, wts, rts, tuple_size, data) * n
 	UnstructuredBuffer buffer;
-	uint32_t num_tuples = _access_set.size(); 
+	uint32_t num_tuples = _access_set.size();
 	buffer.put( &num_tuples );
 	for (auto access : _access_set) {
 		buffer.put( &access.key );
@@ -453,11 +453,11 @@ MaaTManager::find_access(uint64_t key, uint32_t table_id, vector<AccessMaaT> * s
 	return NULL;
 }
 
-void 
+void
 MaaTManager::process_remote_resp(uint32_t node_id, uint32_t size, char * resp_data)
 {
 	// return data format:
-	//		| n | (key, table_id, wts, rts, tuple_size, data) * n 
+	//		| n | (key, table_id, wts, rts, tuple_size, data) * n
 	// store the remote tuple to local access_set.
 	UnstructuredBuffer buffer(resp_data);
 	uint32_t num_tuples;
@@ -473,22 +473,22 @@ MaaTManager::process_remote_resp(uint32_t node_id, uint32_t size, char * resp_da
 		buffer.get( &access->wts );
 		buffer.get( &access->rts );
 		buffer.get( &access->data_size );
-		
-		char * data = NULL;  
+
+		char * data = NULL;
 		buffer.get( data, access->data_size );
 		access->local_data = new char [access->data_size];
 		memcpy(access->local_data, data, access->data_size);
 
 		pthread_mutex_lock( _latch );
-		if(access->type == RD) 
+		if(access->type == RD)
 			_min_commit_ts = max(_min_commit_ts, access->wts);
-		else if (access->type == WR) 
+		else if (access->type == WR)
 			_min_commit_ts = max(_min_commit_ts, access->rts);
 		pthread_mutex_unlock( _latch );
 	}
 }
 
-RC 
+RC
 MaaTManager::handle_ts_ranges()
 {
 	for(set<TxnManager*>::iterator iter=txnsAfterThisTxn.begin();
@@ -497,7 +497,7 @@ MaaTManager::handle_ts_ranges()
 		if(txnsRacingThisTxn.find(*iter) == txnsRacingThisTxn.end()) continue;
 		TxnManager* conflictingTxnRecord = *iter;
 		MaaTManager *maatman = (MaaTManager*)(conflictingTxnRecord->get_cc_manager());
-		
+
 		uint64_t rf = ATOM_SUB_FETCH(maatman->_refcount, 1);
 		M_ASSERT(rf > 0, "rf = %ld", rf);
 #if DEBUG_REFCOUNT
@@ -523,7 +523,7 @@ MaaTManager::handle_ts_ranges()
 	// We send messages to all servers accessed by the txn, even those with no
 	// constraints at all (e.g., servers where the txn performs blind writes
 	// with no conflicts).
-	
+
 	if(_txn->get_txn_state() == TxnManager::ABORTED || _txn->get_txn_state() == TxnManager::ABORTING){
 		assert(false);// return ERROR;  // duplicate
 	}else if(_txn->get_txn_state() == TxnManager::COMMITTED || _txn->get_txn_state() == TxnManager::COMMITTING){
@@ -555,13 +555,13 @@ MaaTManager::handle_ts_ranges()
 	//for(unsigned int i=0;i<nTxnsAfterThisTxn;i++){
 	for(set<TxnManager*>::iterator ita = txnsAfterThisTxn.begin(); ita != txnsAfterThisTxn.end(); ++ita) {
 		TxnManager* conflictingTxnRecord = *ita;
-	        			
+
 		if(conflictingTxnRecord == NULL) assert(false); //continue;
 		MaaTManager *maatman = (MaaTManager*)(conflictingTxnRecord->get_cc_manager());
 
 		TxnManager::State conflictingTxnStatus = conflictingTxnRecord->get_txn_state();
 		if(conflictingTxnStatus == TxnManager::COMMITTING
-			|| conflictingTxnStatus == TxnManager::COMMITTED 
+			|| conflictingTxnStatus == TxnManager::COMMITTED
 			|| conflictingTxnStatus == TxnManager::PREPARING)
 		{
 			uint64_t conflictingTxnTimeRangeMin = maatman->_min_commit_ts;
@@ -573,7 +573,7 @@ MaaTManager::handle_ts_ranges()
 			currentEnd = min(currentEnd, conflictingTxnTimeRangeMin - 1);
 			feasibleEnd = min(feasibleEnd, conflictingTxnTimeRangeMin - 1);
 		} else if(conflictingTxnStatus == TxnManager::RUNNING) {
-			//|| conflictingTxnStatus == TxnManager::NETWORK_WAIT 
+			//|| conflictingTxnStatus == TxnManager::NETWORK_WAIT
 			//|| conflictingTxnStatus == TxnManager::LOCK_WAIT){
 			uint64_t conflictingTxnTimeRangeMax =
 					((MaaTManager*)(conflictingTxnRecord->get_cc_manager()))->_max_commit_ts; // TODO: notice rangeMax here. To compress it into 1-length txn
@@ -585,13 +585,13 @@ MaaTManager::handle_ts_ranges()
 
 	for(set<TxnManager*>::iterator ita = txnsBeforeThisTxn.begin(); ita != txnsBeforeThisTxn.end(); ++ita) {
 		TxnManager* conflictingTxnRecord = *ita;
-	        			
+
 		if(conflictingTxnRecord == NULL) assert(false); //continue;
 		MaaTManager *maatman = (MaaTManager*)(conflictingTxnRecord->get_cc_manager());
 
 		TxnManager::State conflictingTxnStatus = conflictingTxnRecord->get_txn_state();
 		if(conflictingTxnStatus == TxnManager::COMMITTING
-			|| conflictingTxnStatus == TxnManager::COMMITTED 
+			|| conflictingTxnStatus == TxnManager::COMMITTED
 			|| conflictingTxnStatus == TxnManager::PREPARING)
 		{
 			uint64_t conflictingTxnTimeRangeMax = maatman->_max_commit_ts;
@@ -603,7 +603,7 @@ MaaTManager::handle_ts_ranges()
 			currentBegin = max(currentBegin, conflictingTxnTimeRangeMax + 1);
 			feasibleBegin = max(feasibleBegin, conflictingTxnTimeRangeMax + 1);
 		} else if(conflictingTxnStatus == TxnManager::RUNNING) {
-			//|| conflictingTxnStatus == TxnManager::NETWORK_WAIT 
+			//|| conflictingTxnStatus == TxnManager::NETWORK_WAIT
 			//|| conflictingTxnStatus == TxnManager::LOCK_WAIT){
 			uint64_t conflictingTxnTimeRangeMin =
 					maatman->_min_commit_ts; // TODO: notice rangeMax here. To compress it into 1-length txn
@@ -615,13 +615,13 @@ MaaTManager::handle_ts_ranges()
 
 	for(set<TxnManager*>::iterator ita = txnsRacingThisTxn.begin(); ita != txnsRacingThisTxn.end(); ++ita) {
 		TxnManager* conflictingTxnRecord = *ita;
-	        			
+
 		if(conflictingTxnRecord == NULL) assert(false); //continue;
 		MaaTManager *maatman = (MaaTManager*)(conflictingTxnRecord->get_cc_manager());
 
 		TxnManager::State conflictingTxnStatus = conflictingTxnRecord->get_txn_state();
 		if(conflictingTxnStatus == TxnManager::COMMITTING
-			|| conflictingTxnStatus == TxnManager::COMMITTED 
+			|| conflictingTxnStatus == TxnManager::COMMITTED
 			|| conflictingTxnStatus == TxnManager::PREPARING)
 		{
 			uint64_t conflictingTxnTimeRangeMax = maatman->_max_commit_ts;
@@ -712,10 +712,10 @@ MaaTManager::handle_ts_ranges()
 	{
 		TxnManager* conflictingTxnRecord = *iter;
 		MaaTManager* target_maat = (MaaTManager*)(conflictingTxnRecord->get_cc_manager());
-		TxnManager::State conflictingTxnStatus; 
+		TxnManager::State conflictingTxnStatus;
 		do conflictingTxnStatus = conflictingTxnRecord->get_txn_state();
 		while(conflictingTxnStatus == TxnManager::RUNNING
-			&& pthread_mutex_trylock(target_maat->_latch)!=0); 
+			&& pthread_mutex_trylock(target_maat->_latch)!=0);
 		conflictingTxnStatus = conflictingTxnRecord->get_txn_state();
 		if (conflictingTxnStatus != TxnManager::RUNNING) {
 			pthread_mutex_unlock(target_maat->_latch);
@@ -732,8 +732,8 @@ MaaTManager::handle_ts_ranges()
 	{
 		TxnManager* conflictingTxnRecord = *iter;
 		MaaTManager* target_maat = (MaaTManager*)(conflictingTxnRecord->get_cc_manager());
-		
-		TxnManager::State conflictingTxnStatus; 
+
+		TxnManager::State conflictingTxnStatus;
 		do conflictingTxnStatus = conflictingTxnRecord->get_txn_state();
 		while(conflictingTxnStatus == TxnManager::RUNNING
 			&& pthread_mutex_trylock(target_maat->_latch)!=0);
@@ -762,7 +762,7 @@ MaaTManager::handle_ts_ranges()
 
 }
 
-RC 
+RC
 MaaTManager::process_prepare_phase_coord()
 {
 	// Account for the case when the txn reads a data object then updates it
@@ -771,7 +771,7 @@ MaaTManager::process_prepare_phase_coord()
 	// txnsRacingThisTxn.erase(_txn->get_txn_id());
 	// Erase from txnsRacingThisTxn any txns that are already in
 	// txnsAfterThisTxn or txnsBeforeThisTxn
-	return handle_ts_ranges();	
+	return handle_ts_ranges();
 }
 
 void
@@ -788,8 +788,8 @@ MaaTManager::need_prepare_req(uint32_t remote_node_id, uint32_t &size, char * &d
 	//		| txn_ID | txnsAfterThisTxn | txnsBeforeThisTxn | txnsRacingThisTxn;  // but all the 3 sets should be empty
 	return true;
 }
-	
-RC 
+
+RC
 MaaTManager::process_prepare_req( uint32_t size, char * data, uint32_t &resp_size, char * &resp_data )
 {
 	RC rc = handle_ts_ranges();
@@ -797,7 +797,7 @@ MaaTManager::process_prepare_req( uint32_t size, char * data, uint32_t &resp_siz
 		cleanup(ABORT);
 		return ABORT;
 	}
-	
+
 	// prepare the message
 	// Format
 	// 	 | _min_commit_ts | _max_commit_ts |
@@ -808,13 +808,13 @@ MaaTManager::process_prepare_req( uint32_t size, char * data, uint32_t &resp_siz
 	return RCOK;
 }
 
-void 
+void
 MaaTManager::process_prepare_resp(RC rc, uint32_t node_id, char * data)
 {
 	// format
 	// | timeRangeMin | timeRangeMax |
 	if(data)
-	{	
+	{
 		// if it is not a rage abort
 		assert(rc == RCOK);
 		//int offset = 0;
@@ -842,7 +842,7 @@ MaaTManager::finalize_commit_ts()
 	_min_commit_ts = _max_commit_ts = commitTimestamp;
 }
 
-void 
+void
 MaaTManager::process_commit_phase_coord(RC rc)
 {
 
@@ -850,12 +850,12 @@ MaaTManager::process_commit_phase_coord(RC rc)
 	///////
 	if (rc == COMMIT)
 		commit(_min_commit_ts);
-	else { 
+	else {
 		abort();
 	}
 }
 
-void 
+void
 MaaTManager::commit(uint64_t commit_ts)
 {
 	uint64_t timestamp = commit_ts;
@@ -865,15 +865,15 @@ MaaTManager::commit(uint64_t commit_ts)
 	{
 		if ((*ita).type == WR) {
 			ita->row->manager->write_data(ita->local_data, timestamp);
-		} else if ((*ita).type == RD) 
-			(*ita).row->manager->extend_rts(timestamp); 
+		} else if ((*ita).type == RD)
+			(*ita).row->manager->extend_rts(timestamp);
 	}
-	for (vector<IndexAccessMaaT>::iterator it = _index_access_set.begin(); 
-		it != _index_access_set.end(); it ++ ) 
+	for (vector<IndexAccessMaaT>::iterator it = _index_access_set.begin();
+		it != _index_access_set.end(); it ++ )
 	{
 		it->manager->latch();
 		if (it->type != RD) {
-			M_ASSERT( it->manager->_rts < _min_commit_ts, "[[FAIL]] TXN=%ld, cts=%ld, _rts=%ld\n", 
+			M_ASSERT( it->manager->_rts < _min_commit_ts, "[[FAIL]] TXN=%ld, cts=%ld, _rts=%ld\n",
 				_txn->get_txn_id(), _min_commit_ts, it->manager->_rts);
 			it->manager->_wts = it->manager->_rts = _min_commit_ts;
 		}
@@ -899,10 +899,10 @@ MaaTManager::commit_insdel() {
 	for (auto row : _deletes) {
 		set<INDEX *> indexes;
 		row->get_table()->get_indexes( &indexes );
-		for (auto idx : indexes) 
+		for (auto idx : indexes)
 			idx->remove( row );
-		for (vector<AccessMaaT>::iterator it = _access_set.begin(); 
-			 it != _access_set.end(); it ++) 
+		for (vector<AccessMaaT>::iterator it = _access_set.begin();
+			 it != _access_set.end(); it ++)
 		{
 			if (it->row == row) {
 				_access_set.erase(it);
@@ -916,12 +916,12 @@ MaaTManager::commit_insdel() {
 }
 
 
-bool 
+bool
 MaaTManager::need_commit_req(RC rc, uint32_t node_id, uint32_t &size, char * &data)
 {
-	// Still need to send commit req to read only nodes. 
+	// Still need to send commit req to read only nodes.
 	// Since we need to update the timestamp range for that txn.
-	// Format 
+	// Format
 	// 	| commit_ts |
 	if (rc == ABORT)
 		return true;
@@ -930,7 +930,7 @@ MaaTManager::need_commit_req(RC rc, uint32_t node_id, uint32_t &size, char * &da
 	assert(rc == COMMIT);
 	UnstructuredBuffer buffer;
 	uint32_t num_writes = 0;
-	for (vector<AccessMaaT>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++) 
+	for (vector<AccessMaaT>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++)
 		if ((it)->home_node_id == node_id && (it)->type == WR) {
 			buffer.put( &(it)->key );
 			buffer.put( &(it)->table_id );
@@ -943,13 +943,13 @@ MaaTManager::need_commit_req(RC rc, uint32_t node_id, uint32_t &size, char * &da
 	size = buffer.size();
 	data = new char [size];
 	memcpy(data, buffer.data(), size);
-	return true;	
+	return true;
 }
 
-void 
+void
 MaaTManager::process_commit_req(RC rc, uint32_t size, char * data)
 {
-	if (rc == COMMIT) { 
+	if (rc == COMMIT) {
 		// Format
 		//   | commit_ts | num_writes | (key, table_id, size, data) * num_writes
 		UnstructuredBuffer buffer(data);
@@ -957,7 +957,7 @@ MaaTManager::process_commit_req(RC rc, uint32_t size, char * data)
 		buffer.get( &commit_ts );
 		_min_commit_ts = _max_commit_ts = commit_ts;
 		if (size > sizeof(uint64_t)) {
-			uint32_t num_writes; 
+			uint32_t num_writes;
 			buffer.get( &num_writes );
 			for (uint32_t i = 0; i < num_writes; i ++) {
 				uint64_t key;
@@ -977,19 +977,19 @@ MaaTManager::process_commit_req(RC rc, uint32_t size, char * data)
 		abort();
 }
 
-void 
+void
 MaaTManager::abort()
 {
 	cleanup(ABORT);
 }
 
-bool 
+bool
 MaaTManager::is_txn_ready()
-{ 
-	return _num_lock_waits == 0 || _signal_abort; 
+{
+	return _num_lock_waits == 0 || _signal_abort;
 }
 
-void 
+void
 MaaTManager::set_txn_ready(RC rc)
 {
 	// this function can be called by multiple threads concurrently

@@ -56,7 +56,7 @@ void parser(int argc, char * argv[]) {
 #else
 			printf("Ignore option -m\n");
 #endif
-		else if (argv[i][1] == 'r') 
+		else if (argv[i][1] == 'r')
 			g_read_perc = atof( &argv[i][2] );
 		else if (argv[i][1] == 'z')
 			g_zipf_theta = atof( &argv[i][2] );
@@ -66,7 +66,7 @@ void parser(int argc, char * argv[]) {
 			g_num_server_threads = atoi( &argv[i][2] );
 		else if (argv[i][1] == 's')
 			g_synth_table_size = atoi( &argv[i][2] );
-		else if (argv[i][1] == 'R') 
+		else if (argv[i][1] == 'R')
 			g_req_per_query = atoi( &argv[i][2] );
 		else if (argv[i][1] == 'n')
 			g_num_wh = atoi( &argv[i][2] );
@@ -88,7 +88,7 @@ void parser(int argc, char * argv[]) {
 				g_warmup_time = atof( &argv[i][3] );
 			else if (argv[i][2] == 'T')
 				g_run_time = atof( &argv[i][3] );
-			else 
+			else
 				assert(false);
 		} else if (argv[i][1] == 'Y') {
 			if (argv[i][2] == 'r')
@@ -109,7 +109,7 @@ void parser(int argc, char * argv[]) {
 				g_perc_order_status = atof( &argv[i][3] );
 			else if (argv[i][2] == 'd')
 				g_perc_delivery = atof( &argv[i][3] );
-			else 
+			else
 				assert(false);
 		} else if (argv[i][1] == 'A') {
 			// TATP
@@ -120,7 +120,7 @@ void parser(int argc, char * argv[]) {
 			// TICTOC
 			if (argv[i][2] == 'w')
 				g_max_num_waits = atoi( &argv[i][3] );
-			else if (argv[i][2] == 'r') 
+			else if (argv[i][2] == 'r')
 				g_read_intensity_thresh = atof( &argv[i][3] );
 			else assert(false);
 		} else if (argv[i][1] == 'D') {
@@ -140,7 +140,7 @@ void parser(int argc, char * argv[]) {
 		} else if (argv[i][1] == 'h') {
 			print_usage();
 			exit(0);
-		} 
+		}
 		else
 			assert(false);
 	}

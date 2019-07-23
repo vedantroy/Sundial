@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include <set>
 
@@ -12,12 +12,12 @@ class row_t;
 class Row_TCM {
 public:
 	enum LockType {
-		LOCK_EX, 
+		LOCK_EX,
 		LOCK_SH,
 		LOCK_UPGRADING,
-		LOCK_NONE 
+		LOCK_NONE
 	};
-	Row_TCM(); 
+	Row_TCM();
 	Row_TCM(row_t * row);
 	virtual 	~Row_TCM() {}
 	virtual void init(row_t * row);
@@ -36,7 +36,7 @@ protected:
 	};
 	struct LockHolder {
 		TCMManager * manager;
-		LockType type; 
+		LockType type;
 	};
 	struct CompareHolder {
 		bool operator() (const LockHolder &en1, const LockHolder &en2) const {

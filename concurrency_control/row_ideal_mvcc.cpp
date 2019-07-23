@@ -8,11 +8,11 @@
 
 #if CC_ALG==IDEAL_MVCC
 #if OCC_LOCK_TYPE == WAIT_DIE || OCC_WAW_LOCK
-bool 
+bool
 Row_MVCC::CompareWait::operator() (TxnManager * en1, TxnManager * en2) const
-{ 
-		return MAN(en1)->get_priority() < MAN(en2)->get_priority(); 
-}  
+{
+		return MAN(en1)->get_priority() < MAN(en2)->get_priority();
+}
 #endif
 Row_MVCC::Row_MVCC()
 {
@@ -31,15 +31,15 @@ Row_MVCC::Row_MVCC()
 	_delete_timestamp = 0;
 }
 
-RC 
-Row_MVCC::read(TxnManager * txn, char * data, 
-				 uint64_t &wts, uint64_t &rts, uint64_t &cts, bool latch) 
+RC
+Row_MVCC::read(TxnManager * txn, char * data,
+				 uint64_t &wts, uint64_t &rts, uint64_t &cts, bool latch)
 {
 	if (latch)
 		this->latch();
 	if (cts > _pending_cts && _ts_lock)
 	{
-		if (latch) 
+		if (latch)
 			unlatch();
 		INC_INT_STATS(int_aborts_rs1, 1);  // locked and cts > _rts
 		return ABORT;
@@ -52,15 +52,15 @@ Row_MVCC::read(TxnManager * txn, char * data,
 	rts = _rts;
 	if (data)
 		memcpy(data, _row->get_data(), _row->get_tuple_size());
-	
-	if (latch) 
+
+	if (latch)
 		unlatch();
 	if (txn->is_sub_txn())
 		_num_remote_reads ++;
-	return RCOK; 
+	return RCOK;
 }
-	
-RC 
+
+RC
 Row_MVCC::write(TxnManager * txn, uint64_t &wts, uint64_t &rts, uint64_t &cts, bool latch)
 {
 	RC rc = RCOK;
@@ -81,7 +81,7 @@ Row_MVCC::write(TxnManager * txn, uint64_t &wts, uint64_t &rts, uint64_t &cts, b
 			rc = ABORT;
 		}
 	}
-  	
+
 	if (rc == RCOK) {
 		_pending_cts = cts;
 		wts = _wts;
@@ -108,7 +108,7 @@ Row_MVCC::unlatch()
 	pthread_mutex_unlock( _latch );
 }
 
-void 
+void
 Row_MVCC::write_data(char * data, ts_t wts)
 {
 	latch();
@@ -153,9 +153,9 @@ Row_MVCC::try_renew(ts_t rts)
 	return success;
 }
 
-bool 
+bool
 Row_MVCC::try_renew(ts_t wts, ts_t rts, ts_t &new_rts)
-{	
+{
 	if (wts != _wts) {
 		if(_wts < rts)
 		{
@@ -171,9 +171,9 @@ Row_MVCC::try_renew(ts_t wts, ts_t rts, ts_t &new_rts)
 		}
 		return false;
 	}
-	latch(); 
+	latch();
 	if (_deleted) {
-		bool success = (wts == _wts && rts < _delete_timestamp); 	
+		bool success = (wts == _wts && rts < _delete_timestamp);
 		unlatch();
 		return success;
 	}
@@ -181,7 +181,7 @@ Row_MVCC::try_renew(ts_t wts, ts_t rts, ts_t &new_rts)
 	if (_ts_lock) {
 		INC_INT_STATS(int_aborts_rs3, 1);  // Locked by others
 		// TODO. even if _ts_lock == true (meaning someone may write to the tuple soon)
-		// should check the lower bound of upcoming wts. Maybe we can still renew the current rts without 
+		// should check the lower bound of upcoming wts. Maybe we can still renew the current rts without
 		// hurting the upcoming write.
 		pthread_mutex_unlock( _latch );
 		return false;
@@ -203,7 +203,7 @@ Row_MVCC::try_renew(ts_t wts, ts_t rts, ts_t &new_rts)
 		pthread_mutex_unlock( _latch );
 		return false;
 	}
-  	new_rts = _rts; 
+  	new_rts = _rts;
 	if (rts > _rts) {
 		_rts = rts;
 		new_rts = rts;
@@ -243,7 +243,7 @@ Row_MVCC::set_ts(uint64_t wts, uint64_t rts)
 	pthread_mutex_unlock( _latch );
 }
 
-void 
+void
 Row_MVCC::lock()
 {
 	pthread_mutex_lock( _latch );
@@ -252,7 +252,7 @@ Row_MVCC::lock()
 }
 
 bool
-Row_MVCC::try_lock() 
+Row_MVCC::try_lock()
 {
 	assert(false);
 	return false;
@@ -271,13 +271,13 @@ Row_MVCC::try_lock(TxnManager * txn)
   	if (!_ts_lock) {
 		_ts_lock = true;
 		rc = RCOK;
-	} else 
+	} else
 		rc = ABORT;
 	pthread_mutex_unlock( _latch );
 	return rc;
 }
 
-void 
+void
 Row_MVCC::release(TxnManager * txn, RC rc)
 {
 	pthread_mutex_lock( _latch );

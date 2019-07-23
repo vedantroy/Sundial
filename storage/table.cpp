@@ -54,7 +54,7 @@ RC table_t::get_new_row(row_t *& row) {
 RC table_t::get_new_row(row_t *& row, uint64_t part_id) {
 	RC rc = RCOK;
 	cur_tab_size ++;
-	assert(this);	
+	assert(this);
 	row = new row_t(this);
 	return rc;
 }
@@ -65,9 +65,9 @@ table_t::get_indexes(set<INDEX *> * indexes)
 	GET_WORKLOAD->table_to_indexes(_table_id, indexes);
 }
 
-const char * 
-table_t::get_table_name() 
+const char *
+table_t::get_table_name()
 {
-	return schema->table_name; 
+	return schema->table_name;
 }
 
