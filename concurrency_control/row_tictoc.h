@@ -24,8 +24,24 @@ class CCManager;
 class TicTocManager;
 class row_t;
 
+//VED:
+#if SAVE_NEW_WTS
+#include <unordered_map>
+#endif
+
 class Row_tictoc {
 public:
+//VED:
+#if SAVE_NEW_WTS
+    //key = id of txn that read this row
+    //value = the first new wts since the txn represented by the key read this row
+    std::unordered_map<uint64_t, ts_t> active_read_ids;
+    void                               delete_active_read_id(uint64_t txn_id);
+    bool                               try_renew_save_new_wts(ts_t min_new_rts, uint64_t txn_id, ts_t &new_rts);
+    int64_t                            debug_num_overwrites;
+    int64_t                            debug_no_conflict_renew;
+    int64_t                            debug_in_extension;
+#endif
 #if MULTI_VERSION
 	static int          _history_num;
 #endif

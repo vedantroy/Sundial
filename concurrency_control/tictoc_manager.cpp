@@ -173,9 +173,15 @@ TicTocManager::get_row(row_t * row, access_t type, uint64_t key)
 	return get_row(row, type, key, -1);
 }
 
+//VED:
+//This seems to be the concrete implementation of all get_row methods.
+//See if we can figure out if a row is already in the read set in this method.
 RC
 TicTocManager::get_row(row_t * row, access_t type, uint64_t key, uint64_t wts)
 {
+    //VED:
+    assert(wts == (uint64_t)-1);
+
 	RC rc = RCOK;
 	char local_data[row->get_tuple_size()];
 	assert (_txn->get_txn_state() == TxnManager::RUNNING);
@@ -197,6 +203,10 @@ TicTocManager::get_row(row_t * row, access_t type, uint64_t key, uint64_t wts)
 		_last_access = access;
 
 		access->home_node_id = g_node_id;
+        //VED: Code to disprove my assumptions.
+        if(type == RD) {
+            assert(row != NULL);
+        }
 		access->row = row;
 		access->type = type;
 		assert(type == RD || type == WR);
@@ -221,9 +231,12 @@ TicTocManager::get_row(row_t * row, access_t type, uint64_t key, uint64_t wts)
 				ATOM_ADD_FETCH(_num_lock_waits, 1);
 			if (rc == ABORT || rc == WAIT)
 				return rc;
+            //VED:
+            assert(rc == RCOK);
 		}
-	} else
+	} else {
 		assert(type == WR && OCC_WAW_LOCK);
+    }
 
 	// TODO. If the locally cached copy is too old. Also treat it as a local miss.
 	// However, the miss request contains the wts of the cached tuple. So the response
@@ -366,6 +379,9 @@ TicTocManager::get_data(uint64_t key, uint32_t table_id)
 	return NULL;
 }
 
+//VED:
+//This method is called whenever something needs to get a piece of data?
+//QUESTION: Why would access_t type ever be "WR". Afterall, a "WR" doesn't to set data, right?
 RC
 TicTocManager::get_row(row_t * row, access_t type, char * &data, uint64_t key)
 {
@@ -692,6 +708,42 @@ TicTocManager::unlock_read_set()
 		}
 }
 
+#if SAVE_NEW_WTS
+RC
+TicTocManager::validate_read_set_save_new_wts(uint64_t commit_ts)
+{
+	for (auto access : _index_access_set) {
+		if (access.type == INS || access.type == DEL)
+			continue;
+		if (access.rts >= commit_ts) {
+			INC_INT_STATS(num_no_need_to_renewal, 1);
+			continue;
+		}
+		INC_INT_STATS(num_renewals, 1);
+		if (!access.manager->try_renew(access.wts, commit_ts, access.rts))
+		{
+			return ABORT;
+		}
+	}
+	// validate the read set.
+	for (vector<AccessTicToc *>::iterator it = _read_set.begin();
+		it != _read_set.end(); it ++)
+	{
+		if ((*it)->rts >= commit_ts) {
+			INC_INT_STATS(num_no_need_to_renewal, 1);
+            (*it)->row->manager->delete_active_read_id(_txn->get_txn_id());
+			continue;
+		}
+		INC_INT_STATS(num_renewals, 1);
+        if(!(*it)->row->manager->try_renew_save_new_wts(commit_ts, _txn->get_txn_id(), (*it)->rts))
+		{
+			return ABORT;
+		}
+	}
+	return RCOK;
+}
+#endif
+
 RC
 TicTocManager::validate_read_set(uint64_t commit_ts)
 {
@@ -875,8 +927,13 @@ TicTocManager::process_prepare_phase_coord()
 	compute_commit_ts();
 	Isolation isolation = _txn->get_store_procedure()->get_query()->get_isolation_level();
 #if OCC_WAW_LOCK
-	if (isolation == SR)
+	if (isolation == SR) {
+#if SAVE_NEW_WTS
+        rc = validate_read_set_save_new_wts(_min_commit_ts);
+#else
 		rc = validate_read_set(_min_commit_ts);
+#endif
+    }
 #else
 	if (rc == RCOK) {
 		rc = lock_write_set();

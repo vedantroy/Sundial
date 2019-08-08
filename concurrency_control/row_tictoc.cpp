@@ -23,6 +23,10 @@ Row_tictoc::CompareWait::operator() (TxnManager * en1, TxnManager * en2) const
 
 Row_tictoc::Row_tictoc(row_t * row)
 {
+#if SAVE_NEW_WTS
+    //TODO-VED: Check if clearing active_read_ids is necessary.
+    active_read_ids.clear();
+#endif
 	_row = row;
 	_latch = new pthread_mutex_t;
 	_blatch = false;
@@ -42,12 +46,100 @@ Row_tictoc::Row_tictoc(row_t * row)
 	_delete_timestamp = 0;
 }
 
+#if SAVE_NEW_WTS
+void
+Row_tictoc::delete_active_read_id(uint64_t txn_id) {
+    this->latch();
+    active_read_ids.erase(txn_id);
+    this->unlatch();
+}
+
+bool
+Row_tictoc::try_renew_save_new_wts(ts_t min_new_rts, uint64_t txn_id, ts_t &new_rts) {
+    bool success;
+    latch();
+    auto &new_wts = active_read_ids[txn_id];
+    // No other txn over-wrote this row since the time of the read
+    if(new_wts == 0) {
+        /*
+        debug_no_conflict_renew++;
+        if(debug_no_conflict_renew % 5000 == 0) {
+            printf("no conflict renew\n");
+        }*/
+        if(_deleted) {
+            bool delete_after_renewal = _delete_timestamp > min_new_rts;
+            bool write_after_renewal =  new_wts == 0 ? true : new_wts > min_new_rts;
+            success = delete_after_renewal && write_after_renewal;
+            goto cleanup;
+        }
+        // If the row is not locked and it has not been overwritten
+        // we can extend the timestamp
+        // QUESTION: Do we need to check if the lock owner is the current transaction?
+        if(!_ts_lock && new_wts == 0) {
+            _rts = min_new_rts;
+            new_rts = min_new_rts;
+            success = true;
+        } else {
+            // The row is either locked or overwritten, check if a renewal isn't needed
+            success = new_wts > min_new_rts;
+        }
+    } else {
+        /*
+        debug_in_extension++;
+        if(debug_in_extension % 500 == 0) {
+            printf("conflict\n");
+        }*/
+        // A txn over-wrote this row
+       success = new_wts > min_new_rts;
+       /*
+       if(success) {
+           printf("optimization worked!\n");
+       }*/
+    }
+    //TODO-VED: We might be able to get rid of the erase here
+    //since we will be erasing in the cleanup stage anyway
+cleanup:
+    active_read_ids.erase(txn_id);
+    unlatch();
+    return success;
+}
+#endif
+
 RC
 Row_tictoc::read(TxnManager * txn, char * data,
 				 uint64_t &wts, uint64_t &rts, bool latch, bool remote)
 {
-	if (latch)
+	if (latch) {
 		this->latch();
+        // VED:
+        // The insertion should also happen when the "latch" parameter
+        // is false. (Set latch parameter to true and call latch()),
+        // but that hangs the program.
+#if SAVE_NEW_WTS
+        auto id = txn->get_txn_id();
+        if(active_read_ids.find(id) == active_read_ids.end()) {
+            active_read_ids.insert({id, 0});
+        }
+#endif
+    }
+//VED:
+/*
+#if SAVE_NEW_WTS
+    auto id = txn->get_txn_id();
+    if(active_read_ids.find(id) == active_read_ids.end()) {
+        //This hangs the program for some reason.
+        if(!latch) {
+            std::cout << "Overriding latch var" << std::endl;
+            latch = true;
+            this->latch();
+            std::cout << latch << std::endl;
+        }
+        if(latch) {
+            active_read_ids.insert({id, 0});
+        }
+    }
+#endif
+*/
 	wts = _wts;
 	rts = _rts;
 	if (data)
@@ -161,6 +253,19 @@ Row_tictoc::write_data(char * data, ts_t wts)
 	_wts = wts;				// wts/rts and data are consistent.
 #else
 	latch();
+ #if SAVE_NEW_WTS
+    for(auto &pair : active_read_ids) {
+        // This is the first txn to over-write the data item, write the new wts
+        if(pair.second == 0) {
+            /*
+            debug_num_overwrites++;
+            if(debug_num_overwrites % 5000 == 0) {
+                std::cout << "5K overwrites" << std::endl;
+            }*/
+            pair.second = wts;
+        }
+    }
+ #endif
   #if TRACK_LAST
     #if MULTI_VERSION
     --_last_ptr;

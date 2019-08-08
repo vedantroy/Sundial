@@ -58,6 +58,8 @@
 #define MAX_WRITE_SET				10
 #define PER_ROW_VALID				true
 // [TICTOC]
+// VED:
+#define SAVE_NEW_WTS                true
 #define WRITE_COPY_FORM				"data" // ptr or data
 #define TICTOC_MV					false
 #define WR_VALIDATION_SEPARATE		true

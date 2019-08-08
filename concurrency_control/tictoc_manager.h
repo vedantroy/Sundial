@@ -128,6 +128,9 @@ private:
 	void 	unlock_read_set();
 	void 	compute_commit_ts();
 	RC 		validate_read_set(uint64_t commit_ts);
+#if SAVE_NEW_WTS
+    RC      validate_read_set_save_new_wts(uint64_t commit_ts);
+#endif
 	RC 		validate_write_set(uint64_t commit_ts);
 
 	RC handle_pre_abort();
