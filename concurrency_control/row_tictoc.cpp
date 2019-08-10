@@ -68,20 +68,21 @@ Row_tictoc::try_renew_save_new_wts(ts_t min_new_rts, uint64_t txn_id, ts_t &new_
         }*/
         if(_deleted) {
             bool delete_after_renewal = _delete_timestamp > min_new_rts;
-            bool write_after_renewal =  new_wts == 0 ? true : new_wts > min_new_rts;
-            success = delete_after_renewal && write_after_renewal;
+            //bool write_after_renewal =  new_wts == 0 ? true : new_wts > min_new_rts;
+            success = delete_after_renewal; //&& write_after_renewal;
             goto cleanup;
         }
         // If the row is not locked and it has not been overwritten
         // we can extend the timestamp
         // QUESTION: Do we need to check if the lock owner is the current transaction?
-        if(!_ts_lock && new_wts == 0) {
+        if(!_ts_lock /*&& new_wts == 0*/) {
             _rts = min_new_rts;
             new_rts = min_new_rts;
             success = true;
         } else {
             // The row is either locked or overwritten, check if a renewal isn't needed
-            success = new_wts > min_new_rts;
+            //assert((new_wts > min_new_rts) == false);
+            success = false;
         }
     } else {
         /*
@@ -103,11 +104,10 @@ cleanup:
     unlatch();
     return success;
 }
-#endif
 
 RC
-Row_tictoc::read(TxnManager * txn, char * data,
-				 uint64_t &wts, uint64_t &rts, bool latch, bool remote)
+Row_tictoc::read_and_check_if_abort(TxnManager * txn, char * data,
+				 uint64_t &wts, uint64_t &rts, bool latch, bool remote, uint64_t commit_ts)
 {
 	if (latch) {
 		this->latch();
@@ -115,10 +115,15 @@ Row_tictoc::read(TxnManager * txn, char * data,
         // The insertion should also happen when the "latch" parameter
         // is false. (Set latch parameter to true and call latch()),
         // but that hangs the program.
-#if SAVE_NEW_WTS
         auto id = txn->get_txn_id();
         if(active_read_ids.find(id) == active_read_ids.end()) {
             active_read_ids.insert({id, 0});
+        }
+#if SAVE_NEW_WTS_ABORT_ON_READ
+         else if (active_read_ids[id] > commit_ts) {
+            active_read_ids.erase(id);
+            unlatch();
+            return ABORT;
         }
 #endif
     }
@@ -160,6 +165,37 @@ Row_tictoc::read(TxnManager * txn, char * data,
 		unlatch();
 	return RCOK;
 }
+#endif
+
+//VED:
+//TODO:Probably should only use read_and_check_if_abort instead of polluting this method with macros
+RC
+Row_tictoc::read(TxnManager * txn, char * data,
+				 uint64_t &wts, uint64_t &rts, bool latch, bool remote)
+{
+	if (latch) {
+		this->latch();
+    }
+	wts = _wts;
+	rts = _rts;
+	if (data)
+		memcpy(data, _row->get_data(), _row->get_tuple_size());
+
+	if (txn->is_sub_txn())
+		_num_remote_reads ++;
+#if ENABLE_LOCAL_CACHING
+	if (_row && remote) {
+	#if RO_LEASE
+		uint64_t max_rts = _row->get_table()->get_max_rts();
+		if (max_rts > _rts)
+			rts = _rts = max_rts;
+	#endif
+	}
+#endif
+	if (latch)
+		unlatch();
+	return RCOK;
+}
 
 RC
 Row_tictoc::write(TxnManager * txn, uint64_t &wts, uint64_t &rts, bool latch)
@@ -170,11 +206,21 @@ Row_tictoc::write(TxnManager * txn, uint64_t &wts, uint64_t &rts, bool latch)
 	if (_ts_lock)
 		return ABORT;
 #endif
-	if (latch)
+	if (latch) {
 		pthread_mutex_lock( _latch );
+    }
   	if (!_ts_lock) {
 		_ts_lock = true;
 		_lock_owner = txn;
+        //VED: This is duplicated code
+ #if SAVE_NEW_WTS
+    for(auto &pair : active_read_ids) {
+        // This is the first txn to over-write the data item, write the new wts
+        if(pair.second == 0) {
+            pair.second = wts;
+        }
+    }
+ #endif
 	} else if (_lock_owner != txn) {
 #if OCC_LOCK_TYPE == NO_WAIT
 		rc = ABORT;

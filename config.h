@@ -60,6 +60,8 @@
 // [TICTOC]
 // VED:
 #define SAVE_NEW_WTS                true
+#define SAVE_NEW_WTS_ABORT_ON_READ  true
+#define SAVE_NEW_WTS_1PC            true
 #define WRITE_COPY_FORM				"data" // ptr or data
 #define TICTOC_MV					false
 #define WR_VALIDATION_SEPARATE		true
@@ -89,7 +91,8 @@
 #define LOCK_TRIAL					3
 #define MULTI_VERSION               false
 // [TICTOC, SILO]
-#define OCC_LOCK_TYPE 				WAIT_DIE
+// NO_WAIT, WAIT_DIE
+#define OCC_LOCK_TYPE 				NO_WAIT
 #define PRE_ABORT					true
 #define ATOMIC_WORD					false
 #define UPDATE_TABLE_TS				true

@@ -186,6 +186,9 @@ TicTocManager::get_row(row_t * row, access_t type, uint64_t key, uint64_t wts)
 	char local_data[row->get_tuple_size()];
 	assert (_txn->get_txn_state() == TxnManager::RUNNING);
 
+    //VED:
+        // Still correct if we append several times
+        // 
 	AccessTicToc * access = NULL;
 	for (vector<AccessTicToc>::iterator it = _access_set.begin(); it != _access_set.end(); it ++) {
 		if (it->row == row) {
@@ -217,7 +220,18 @@ TicTocManager::get_row(row_t * row, access_t type, uint64_t key, uint64_t wts)
 
 		assert(access->row->table);
 		if (type == RD || !OCC_WAW_LOCK) {
+#if SAVE_NEW_WTS
+            // This method can only return abort if SAVE_NEW_WTS_ABORT_ON_READ is true
+            rc = row->manager->read_and_check_if_abort(_txn, local_data, access->wts, access->rts, true, wts != (uint64_t)-1, _min_commit_ts);
+#if SAVE_NEW_WTS_ABORT_ON_READ
+            if(rc == ABORT) {
+                INC_INT_STATS(ved_abort_on_read, 1);
+                return rc;
+            }
+#endif
+#else
 			rc = row->manager->read(_txn, local_data, access->wts, access->rts, true, wts != (uint64_t)-1);
+#endif
 			_min_commit_ts = max(_min_commit_ts, access->wts);
 #if ENABLE_LOCAL_CACHING
 			if (access->wts == wts) {

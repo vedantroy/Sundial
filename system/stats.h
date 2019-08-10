@@ -125,7 +125,10 @@ enum StatsInt {
 
     STAT_int_saved_by_hist,
 
-	NUM_INT_STATS
+    //VED:
+    STAT_ved_abort_on_read,
+
+	NUM_INT_STATS,
 };
 
 class Stats_thd {
@@ -299,7 +302,9 @@ public:
 		"int_inevitable",
 		"int_possibMVCC",
 
-        "int_saved_by_hist"
+        "int_saved_by_hist",
+
+        "ved_abort_on_read"
 
 	};
 private:

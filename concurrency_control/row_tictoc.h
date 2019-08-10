@@ -38,6 +38,7 @@ public:
     std::unordered_map<uint64_t, ts_t> active_read_ids;
     void                               delete_active_read_id(uint64_t txn_id);
     bool                               try_renew_save_new_wts(ts_t min_new_rts, uint64_t txn_id, ts_t &new_rts);
+    RC                                 read_and_check_if_abort(TxnManager * txn, char * data, uint64_t &wts, uint64_t &rts, bool latch, bool remote, uint64_t min_commit_ts);
     int64_t                            debug_num_overwrites;
     int64_t                            debug_no_conflict_renew;
     int64_t                            debug_in_extension;
