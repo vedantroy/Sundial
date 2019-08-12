@@ -80,6 +80,9 @@ extern uint32_t g_num_worker_threads;
 extern uint32_t g_num_server_threads;
 //extern uint32_t g_num_remote_threads;
 
+//VED: Set the node id using an argument
+extern int      manual_node_id;
+
 extern uint32_t g_total_num_threads;
 extern ts_t g_abort_penalty;
 extern uint32_t g_ts_alloc;
