@@ -5,6 +5,9 @@
 #include "txn_table.h"
 #include "log.h"
 
+//VED:
+int manual_node_id = -1;
+
 Stats * stats;
 Manager * glob_manager;
 LogManager * log_manager;

@@ -74,6 +74,12 @@ Transport::Transport(uint32_t transport_id)
 		if (_urls[i] == string(hostname))
 			global_node_id = i;
 	}
+
+    //VED:
+    // If the user enters -Dn<int> use the value of <int> for the global_node_id instead of ifconfig.txt
+    if(manual_node_id != -1) {
+        global_node_id = manual_node_id;
+    }
 	M_ASSERT(global_node_id != g_num_nodes, "the node %s is not in ifconfig.txt", hostname);
 	if (_transport_id == 0) {
 		g_node_id = global_node_id;
