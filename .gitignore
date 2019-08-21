@@ -2,8 +2,10 @@
 *.o
 # Build Artifacts
 *.d
+compile_commands.json
 # Generated executable
 rundb
 # Configuration Files
 ifconfigtxt
-
+# Temporary Notes Files
+*.md
