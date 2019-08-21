@@ -284,6 +284,9 @@ TxnManager::execute(bool restart)
 #if CC_ALG == NAIVE_TICTOC
 				return process_lock_phase();
 #else
+                //VED: In 1PC commit, this method can be replaced with a method that
+                // 1. calculates min commit timestamp (no failure b/c of read locks)
+                // 2. sends COMMIT request w/ min commit timestamp to all nodes
 				return process_2pc_prepare_phase();
 #endif
 			}
@@ -556,6 +559,7 @@ TxnManager::process_2pc_prepare_phase()
 
 	_num_resp_expected = 0;
 	bool resp_expected = false;
+    // VED: In TicToc, this method 1) validates the read set and 2) computes the commit ts
 	rc = _cc_manager->process_prepare_phase_coord();
 	if (rc == WAIT) {
 		assert(CC_ALG != TICTOC || OCC_LOCK_TYPE == WAIT_DIE);
