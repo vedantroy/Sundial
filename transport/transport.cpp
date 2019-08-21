@@ -126,7 +126,7 @@ Transport::Transport(uint32_t transport_id)
 		fcntl(socketfd, F_SETFL, O_NONBLOCK);
 	}
 	cout << "Local Socket initialized"  << endl;
-
+    cout << "Establishing connection to remote servers" << endl;
 	// Establish connection to remote servers.
 	memset(_remote_info, 0, sizeof(addrinfo) * g_num_nodes);
 	for (uint32_t i = 0; i < g_num_nodes; i++) {
@@ -166,7 +166,7 @@ Transport::Transport(uint32_t transport_id)
 		// TODO. right now, sending is blocking. change this later
 		//fcntl(socketfd, F_SETFL, O_NONBLOCK);
 	}
-
+    cout << "Accepting connections from remote servers" << endl;
 	// Accept connection from remote servers.
 	for (uint32_t i = 0; i < g_num_nodes; i++) {
 		if (i == global_node_id)
@@ -181,7 +181,6 @@ Transport::Transport(uint32_t transport_id)
 		_local_socks[i] = new_sd;
 		fcntl(new_sd, F_SETFL, O_NONBLOCK);
 	}
-
 	cout << "Socket initialized" << endl;
 	_tot_bytes_sent = 0;
 }
