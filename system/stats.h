@@ -127,6 +127,7 @@ enum StatsInt {
 
     //VED:
     STAT_ved_abort_on_read,
+    STAT_ved_generic_counter,
 
 	NUM_INT_STATS,
 };
@@ -304,8 +305,8 @@ public:
 
         "int_saved_by_hist",
 
-        "ved_abort_on_read"
-
+        "ved_abort_on_read",
+        "ved_generic_counter"
 	};
 private:
 	vector<double> _aggregate_latency;
