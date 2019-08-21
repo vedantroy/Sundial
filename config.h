@@ -59,9 +59,9 @@
 #define PER_ROW_VALID				true
 // [TICTOC]
 // VED:
-#define SAVE_NEW_WTS                true
-#define SAVE_NEW_WTS_ABORT_ON_READ  true
-#define SAVE_NEW_WTS_1PC            true
+#define SAVE_NEW_WTS                false
+#define SAVE_NEW_WTS_ABORT_ON_READ  false
+#define SAVE_NEW_WTS_1PC            false
 #define WRITE_COPY_FORM				"data" // ptr or data
 #define TICTOC_MV					false
 #define WR_VALIDATION_SEPARATE		true
