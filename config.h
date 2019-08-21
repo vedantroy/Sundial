@@ -2,7 +2,7 @@
 
 #define DISTRIBUTED_ENABLE			true
 // number of server threads
-#define NUM_SERVER_THREADS			8
+#define NUM_SERVER_THREADS			2
 
 ////////////////////////////////////////////////////////////////////////
 // For distributed DBMS, the following parameters are for a single node.
@@ -126,12 +126,12 @@
 ///////////////////////////////
 // Number of tuples per node
 #define SYNTH_TABLE_SIZE 			(1024 * 10)
-#define ZIPF_THETA 					0.9
-#define READ_PERC 					0.9
+#define ZIPF_THETA 					0.6  // used to generate the queries-- the larger zipf_theta, the more steep the curve is
+#define READ_PERC 					0.5
 #define PERC_READONLY_DATA			0
 #define PERC_REMOTE					0.1
 #define SINGLE_PART_ONLY			false // access single partition only
-#define REQ_PER_QUERY				16
+#define REQ_PER_QUERY				2
 #define THINK_TIME					0  // in us
 #define SOCIAL_NETWORK				false
 ///////////////////////////////
@@ -238,7 +238,7 @@ extern TestCases					g_test_case;
 #define INOUT_QUEUE_SIZE			1024
 #define NUM_INPUT_THREADS			1
 #define NUM_OUTPUT_THREADS			1
-#define MAX_NUM_ACTIVE_TXNS			128
+#define MAX_NUM_ACTIVE_TXNS			32768
 #define ENABLE_MSG_BUFFER			false
 #define MAX_MESSAGE_SIZE 			16384
 #define RECV_BUFFER_SIZE 			32768
