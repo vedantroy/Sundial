@@ -56,7 +56,7 @@ public:
 	void send_msg(Message * msg);
 	RC process_msg(Message * msg);
 	// execute may start from beginning, or it may resume a waiting txn.
-	RC execute(bool restart = false);
+	RC execute(bool restart = false, std::string info = "DEFAULT");
 
 	RC start_execute();
 	RC continue_execute();
@@ -132,7 +132,7 @@ private:
 
 	// commit phase
 	// rc can be either COMMIT or Abort.
-	RC process_2pc_commit_phase(RC rc);
+	RC process_2pc_commit_phase(RC rc, std::string info = "DEFAULT");
 	RC process_2pc_commit_req(Message * msg);
 	RC process_2pc_commit_resp();
 

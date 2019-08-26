@@ -130,6 +130,11 @@
 	if (STATS_ENABLE) \
 		stats->_stats[GET_THD_ID]->_int_stats[STAT_##name] += value; }}
 
+#define WITH_INT_STAT(name, code)  {{ \
+	if (STATS_ENABLE) { \
+        uint64_t stat_value = stats->_stats[GET_THD_ID]->_int_stats[STAT_##name]; \
+        { code }}}}
+
 #define TIME_STATS(dim1, dim2, value) { \
 	if (STATS_ENABLE) \
 		stats->_stats[GET_THD_ID]->_time_breakdown[TIME_##dim1][TIME_##dim2] += value; }

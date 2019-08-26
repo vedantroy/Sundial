@@ -22,6 +22,11 @@ void parser(int argc, char * argv[]);
 
 int main(int argc, char* argv[])
 {
+#if ONE_PC
+    printf("using 1pc\n");
+#else
+    printf("using 2pc\n");
+#endif
 	parser(argc, argv);
 	M_ASSERT(INDEX_STRUCT != IDX_BTREE, "btree is not supported yet\n");
 	transport = new Transport * [g_num_input_threads];

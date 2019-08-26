@@ -79,12 +79,15 @@ TxnManager::TxnManager(ServerThread * thread, bool sub_txn)
 
 TxnManager::TxnManager(TxnManager * txn)
 {
+    //VED: I assume this constructor is only called when a transaction is restarting.
 	_txn_id = txn->get_txn_id();
 	_txn_state = RUNNING;
 	_num_resp_expected = 0;
 	waiting_for_remote = false;
 	waiting_for_lock = false;
 	pthread_mutex_init( &_txn_lock, NULL );
+
+    cout << ("restarting txn: " + to_string(_txn_id) + "\n");
 
 	_txn_start_time = txn->_txn_start_time;
 	_txn_restart_time = get_sys_clock();
@@ -220,14 +223,14 @@ TxnManager::start_execute()
 	}
 	_store_procedure->init();
 	assert(_txn_state == RUNNING);
-	return execute();
+	return execute("starting");
 }
 
 RC
 TxnManager::continue_execute()
 {
 	if (_txn_state == RUNNING)
-		return execute();
+		return execute("continuing");
 	else if (_txn_state == PREPARING) {
 		assert(CC_ALG == F_ONE || CC_ALG == TICTOC);
 		assert(OCC_LOCK_TYPE == WAIT_DIE);
@@ -238,8 +241,12 @@ TxnManager::continue_execute()
 }
 
 RC
-TxnManager::execute(bool restart)
+TxnManager::execute(bool restart, std::string info)
 {
+    if(info != "DEFAULT") {
+        cout << (info + "\n");
+    }
+
 	// Stats
 	if (waiting_for_lock)
 		_lock_wait_time += get_sys_clock() - _lock_wait_start_time;
@@ -283,6 +290,8 @@ TxnManager::execute(bool restart)
 				assert(!_txn_abort);
 #if CC_ALG == NAIVE_TICTOC
 				return process_lock_phase();
+#elif ONE_PC
+                return process_2pc_commit_phase(COMMIT, "1pc_shortcut");
 #else
 				return process_2pc_prepare_phase();
 #endif
@@ -294,7 +303,7 @@ TxnManager::execute(bool restart)
 				if (!_txn_abort)
 					return continue_execute();
 				else
-					return process_2pc_commit_phase(ABORT);
+					return process_2pc_commit_phase(ABORT, "abort_in_execute");
 			} else
 				return RCOK;
 		} else if (rc == ABORT) {
@@ -302,7 +311,8 @@ TxnManager::execute(bool restart)
 			INC_INT_STATS(num_aborts_execute, 1);
 			if (_num_resp_expected == 0 || ATOM_SUB_FETCH(_num_resp_expected, 1) == 0) {
 				waiting_for_remote = false;
-				return process_2pc_commit_phase(ABORT);
+                // std::cout << "restart time: " << _txn_restart_time << endl;
+				return process_2pc_commit_phase(ABORT, "abort_in_execute_2");
 			} else
 				return RCOK;
 		} else if (rc == LOCAL_MISS) {
@@ -410,7 +420,7 @@ TxnManager::process_remote_req(Message * msg)
 {
 	_src_node_id = msg->get_src_node_id();
 	_store_procedure->init();
-	return execute();
+	return execute("from_msg");
 }
 
 RC
@@ -437,7 +447,7 @@ TxnManager::process_remote_resp(Message * msg)
 		if (!_txn_abort)
 			return continue_execute();
 		else
-			return process_2pc_commit_phase(ABORT);
+			return process_2pc_commit_phase(ABORT, "abort_on_msg_and_no_resps_left");
 	}
 	return RCOK;
 }
@@ -556,7 +566,12 @@ TxnManager::process_2pc_prepare_phase()
 
 	_num_resp_expected = 0;
 	bool resp_expected = false;
+    //VED: This just returns RCOK if the algo is NO_WAIT
 	rc = _cc_manager->process_prepare_phase_coord();
+    //VED:
+#if CC_ALG == NO_WAIT
+    assert(rc == RCOK);
+#endif
 	if (rc == WAIT) {
 		assert(CC_ALG != TICTOC || OCC_LOCK_TYPE == WAIT_DIE);
 		assert(CC_ALG != NAIVE_TICTOC);
@@ -576,6 +591,7 @@ TxnManager::process_2pc_prepare_phase()
 		return process_2pc_commit_phase(ABORT);
 	} else if (rc == RCOK || rc == WAIT) {
 		// for local caching, some remotes nodes are not registered
+        // VED: For NO_WAIT get_remote_nodes does nothing
 		_cc_manager->get_remote_nodes(&remote_nodes_involved);
 		for (set<uint32_t>::iterator it = remote_nodes_involved.begin();
 			it != remote_nodes_involved.end();
@@ -583,6 +599,7 @@ TxnManager::process_2pc_prepare_phase()
 		{
 			uint32_t data_size = 0;
 			char * data = NULL;
+            // VED: Initializes variables and returns true as default
 			bool send = _cc_manager->need_prepare_req(*it, data_size, data);
 			if (send) {
 				resp_expected = true;
@@ -764,9 +781,29 @@ TxnManager::process_2pc_prepare_resp(Message * msg)
 	}
 }
 
+std::string
+rc_to_string(RC rc) {
+    if(rc == COMMIT)
+        return "COMMIT";
+    else if (rc == ABORT)
+        return "ABORT";
+    else {
+        assert(false);
+        return "INVALID";
+    }
+}
+
 RC
-TxnManager::process_2pc_commit_phase(RC rc)
+TxnManager::process_2pc_commit_phase(RC rc, const std::string info)
 {
+    /*
+    cout << (info + " id: " + to_string(get_txn_id()) + "\n");
+    if(info == "1pc_shortcut") {
+        assert(readonly_remote_nodes.size() == 0);
+        assert(aborted_remote_nodes.size()  == 0);
+    }
+    */
+
 	_commit_start_time = get_sys_clock();
 #if CC_ALG == TCM
 	if (rc == COMMIT)
@@ -807,6 +844,7 @@ TxnManager::process_2pc_commit_phase(RC rc)
 		}
 	}
 #endif
+
 	for (set<uint32_t>::iterator it = remote_nodes_involved.begin();
 		it != remote_nodes_involved.end();
 		it ++)
@@ -827,9 +865,18 @@ TxnManager::process_2pc_commit_phase(RC rc)
 	}
 	_cc_manager->process_commit_phase_coord(rc);
 	if (resp_expected) {
+        //VED:
+        // cout << ("asserting for txn: " + to_string(get_txn_id()) + "\n");
+        assert(_num_resp_expected == 1);
+
 		waiting_for_remote = true;
 		return RCOK;
 	} else {
+        //VED:
+        // If transaction ids are globally unique this method should only be called once!
+        // WITH_INT_STAT(ved_generic_counter,
+        //        cout << ("remote aborts: " + to_string(stat_value) + " completing txn with " + rc_to_string(rc) + " id: " + to_string(get_txn_id()) + "\n"); );
+
 		remote_nodes_involved.clear();
 		aborted_remote_nodes.clear();
 		readonly_remote_nodes.clear();
@@ -869,6 +916,7 @@ TxnManager::process_2pc_commit_resp()
 	if (resp_left > 0) {
 		return RCOK;
 	} else {
+        cout << ( "txn id: " + to_string(get_txn_id()) + " finished" + "\n");
 		waiting_for_remote = false;
 		remote_nodes_involved.clear();
 		aborted_remote_nodes.clear();
