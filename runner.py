@@ -2,6 +2,10 @@ import subprocess
 import argparse
 import re
 
+# This script can blur/produce inaccurate results on a weak computer because
+# it also uses compute power, which trades off w/ the DB instances.
+# This may be especially true for two nodes at once.
+
 def extract_throughput(text):
     return float(re.search("Throughput:\s*(\d*.\d)", text)[1])
 
