@@ -87,7 +87,7 @@ TxnManager::TxnManager(TxnManager * txn)
 	waiting_for_lock = false;
 	pthread_mutex_init( &_txn_lock, NULL );
 
-    cout << ("restarting txn: " + to_string(_txn_id) + "\n");
+    // cout << ("restarting txn: " + to_string(_txn_id) + "\n");
 
 	_txn_start_time = txn->_txn_start_time;
 	_txn_restart_time = get_sys_clock();
@@ -241,13 +241,9 @@ TxnManager::continue_execute()
 }
 
 RC
-TxnManager::execute(bool restart, std::string info)
+TxnManager::execute(bool restart)
 {
-    if(info != "DEFAULT") {
-        cout << (info + "\n");
-    }
-
-	// Stats
+    // Stats
 	if (waiting_for_lock)
 		_lock_wait_time += get_sys_clock() - _lock_wait_start_time;
 	waiting_for_lock = false;
@@ -291,7 +287,7 @@ TxnManager::execute(bool restart, std::string info)
 #if CC_ALG == NAIVE_TICTOC
 				return process_lock_phase();
 #elif ONE_PC
-                return process_2pc_commit_phase(COMMIT, "1pc_shortcut");
+                return process_2pc_commit_phase(COMMIT);
 #else
 				return process_2pc_prepare_phase();
 #endif
@@ -303,7 +299,7 @@ TxnManager::execute(bool restart, std::string info)
 				if (!_txn_abort)
 					return continue_execute();
 				else
-					return process_2pc_commit_phase(ABORT, "abort_in_execute");
+					return process_2pc_commit_phase(ABORT);
 			} else
 				return RCOK;
 		} else if (rc == ABORT) {
@@ -312,7 +308,7 @@ TxnManager::execute(bool restart, std::string info)
 			if (_num_resp_expected == 0 || ATOM_SUB_FETCH(_num_resp_expected, 1) == 0) {
 				waiting_for_remote = false;
                 // std::cout << "restart time: " << _txn_restart_time << endl;
-				return process_2pc_commit_phase(ABORT, "abort_in_execute_2");
+				return process_2pc_commit_phase(ABORT);
 			} else
 				return RCOK;
 		} else if (rc == LOCAL_MISS) {
@@ -447,7 +443,7 @@ TxnManager::process_remote_resp(Message * msg)
 		if (!_txn_abort)
 			return continue_execute();
 		else
-			return process_2pc_commit_phase(ABORT, "abort_on_msg_and_no_resps_left");
+			return process_2pc_commit_phase(ABORT);
 	}
 	return RCOK;
 }
@@ -794,7 +790,7 @@ rc_to_string(RC rc) {
 }
 
 RC
-TxnManager::process_2pc_commit_phase(RC rc, const std::string info)
+TxnManager::process_2pc_commit_phase(RC rc)
 {
     /*
     cout << (info + " id: " + to_string(get_txn_id()) + "\n");
@@ -867,7 +863,7 @@ TxnManager::process_2pc_commit_phase(RC rc, const std::string info)
 	if (resp_expected) {
         //VED:
         // cout << ("asserting for txn: " + to_string(get_txn_id()) + "\n");
-        assert(_num_resp_expected == 1);
+        // assert(_num_resp_expected == 1);
 
 		waiting_for_remote = true;
 		return RCOK;
@@ -916,7 +912,7 @@ TxnManager::process_2pc_commit_resp()
 	if (resp_left > 0) {
 		return RCOK;
 	} else {
-        cout << ( "txn id: " + to_string(get_txn_id()) + " finished" + "\n");
+        // cout << ( "txn id: " + to_string(get_txn_id()) + " finished" + "\n");
 		waiting_for_remote = false;
 		remote_nodes_involved.clear();
 		aborted_remote_nodes.clear();
