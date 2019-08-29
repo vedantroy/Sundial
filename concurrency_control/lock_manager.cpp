@@ -349,13 +349,29 @@ LockManager::need_commit_req(RC rc, uint32_t node_id, uint32_t &size, char * &da
 {
 	if (rc == ABORT)
 		return true;
+
+#if ONE_PC
+    bool remote_read = false;
+#endif
+
 	// Format
 	//   | num_writes | (key, table_id, size, data) * num_writes
 	UnstructuredBuffer buffer;
 	uint32_t num_writes = 0;
-	for (vector<AccessLock>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++)
-		if ((it)->home_node_id == node_id && (it)->type == WR)
+	for (vector<AccessLock>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++) {
+#if ONE_PC
+        if((it)->home_node_id == node_id) {
+            if((it)->type == WR)
+                num_writes++;
+            else
+                remote_read = true;
+        }
+#else
+		if ((it)->home_node_id == node_id && (it)->type == WR) {
 			num_writes ++;
+        }
+#endif
+    }
 	if (num_writes) {
 		buffer.put( &num_writes );
 		for (vector<AccessLock>::iterator it = _remote_set.begin(); it != _remote_set.end(); it ++)
@@ -369,9 +385,13 @@ LockManager::need_commit_req(RC rc, uint32_t node_id, uint32_t &size, char * &da
 		data = new char [size];
 		memcpy(data, buffer.data(), size);
 		return true;
-	} else
-		// read only txn, no need to commit.
-		return false;
+	}
+#if ONE_PC
+    else if (remote_read)
+        return true;
+#endif
+    else
+        return false;
 }
 
 void

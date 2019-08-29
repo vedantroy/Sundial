@@ -68,14 +68,6 @@ Row_lock::lock_get(LockType type, TxnManager * txn, bool need_latch)
 		} else {
 			INC_INT_STATS(num_aborts_rs, 1);
 		}
-
-        //VED:
-        std::string debug;
-        for(auto &txn : _locking_set) {
-            debug += "txn: " + to_string(txn->get_txn_id()) + " ";
-        }
-        debug += "existing lock is: " + to_string(_lock_type) + "\n";
-        cout << debug;
 		return ABORT;
 	}
 #endif

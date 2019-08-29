@@ -847,8 +847,11 @@ TxnManager::process_2pc_commit_phase(RC rc)
 	{
 		if (aborted_remote_nodes.find(*it) != aborted_remote_nodes.end())
 			continue;
+        //VED: In ONE_PC this set will always be empty
+#if ONE_PC
 		if (readonly_remote_nodes.find(*it) != readonly_remote_nodes.end())
 			continue;
+#endif
 		uint32_t size = 0;
 		char * data = NULL;
 		bool send = _cc_manager->need_commit_req(rc, *it, size, data);
